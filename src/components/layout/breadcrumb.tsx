@@ -7,7 +7,7 @@ import { ChevronRight } from "lucide-react";
 
 export function Breadcrumb() {
   const pathname = usePathname();
-  const crumbs = getBreadcrumbs(pathname);
+  const crumbs = getBreadcrumbs(pathname ?? undefined);
   if (crumbs.length <= 1) return null;
 
   return (

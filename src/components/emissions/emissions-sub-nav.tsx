@@ -14,7 +14,10 @@ export function EmissionsSubNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-1 rounded-lg border border-border bg-muted/40 p-1 w-fit">
+    <nav
+      className="inline-flex items-center gap-0.5 rounded-full border border-border bg-background p-1 w-fit shadow-inner"
+      aria-label="Scope 탭"
+    >
       {items.map((item) => {
         const isActive = pathname === item.href;
         return (
@@ -22,11 +25,12 @@ export function EmissionsSubNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "rounded-md px-4 py-2 text-sm font-medium transition-colors",
+              "rounded-full px-4 py-2 text-sm font-medium transition-colors",
               isActive
                 ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-background hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
+            aria-current={isActive ? "page" : undefined}
           >
             {item.label}
           </Link>

@@ -31,18 +31,18 @@ export function SubNav({
 
   const containerClassName =
     variant === "pill"
-      ? "flex gap-1 rounded-lg border border-border bg-muted/30 p-1 w-fit"
+      ? "inline-flex gap-0.5 rounded-full border border-border bg-background p-1 w-fit shadow-inner"
       : "flex flex-wrap items-center gap-1 border-b border-border pb-2";
 
   const baseLinkClassName =
-    "rounded-md px-3 py-1.5 text-sm font-medium transition-colors";
+    "rounded-full px-4 py-2 text-sm font-medium transition-colors";
 
   const getLinkClassName = (active: boolean) => {
     if (variant === "pill") {
       return cn(
         baseLinkClassName,
         active
-          ? "bg-background text-foreground shadow-sm"
+          ? "bg-primary text-primary-foreground shadow-sm"
           : "text-muted-foreground hover:text-foreground",
       );
     }

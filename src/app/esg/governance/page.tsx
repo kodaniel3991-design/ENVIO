@@ -1,24 +1,45 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { getGovernanceMetrics, getGovernanceSummary } from "@/services/api";
+import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { EsgSubNav } from "@/components/esg/esg-sub-nav";
-import { EsgSummaryCards } from "@/components/esg/esg-summary-cards";
-import { EsgMetricsTable } from "@/components/esg/esg-metrics-table";
-import { Button } from "@/components/ui/button";
-import { FileUp, Plus, PenLine } from "lucide-react";
+import { GovernanceKpiCards } from "@/components/governance-data/governance-kpi-cards";
+import { GovernanceAiInsight } from "@/components/governance-data/governance-ai-insight";
+import { GovernanceFilters } from "@/components/governance-data/governance-filters";
+import { GovernanceDataTable } from "@/components/governance-data/governance-data-table";
+import { GovernanceDetailDrawer } from "@/components/governance-data/governance-detail-drawer";
+import { DataQualityCards } from "@/components/environment-data/data-quality-cards";
+import { GovernanceTrendCharts } from "@/components/governance-data/governance-trend-charts";
+import { GovernanceCategoryBreakdown } from "@/components/governance-data/governance-category-breakdown";
+import {
+  MOCK_GOV_KPI,
+  MOCK_GOV_AI_INSIGHT,
+  MOCK_GOV_TABLE_ROWS,
+  MOCK_GOV_DATA_QUALITY,
+  MOCK_GOV_TREND,
+  MOCK_GOV_CATEGORY_BREAKDOWN,
+  getGovernanceDetailById,
+} from "@/lib/mock/governance-data";
+import type {
+  GovernanceDataRow,
+  GovernanceDataDetail,
+} from "@/types/governance-data";
+import type { DataQualityScore } from "@/types/environment-data";
 
+/**
+ * 거버넌스 데이터 페이지
+ * 데이터 관리 > ESG 데이터 > 거버넌스 데이터
+ * 환경 데이터와 동일한 구조: KPI, AI 인사이트, 필터, 테이블, 상세 드로어, 데이터 품질, 추이 차트, 카테고리별 요약
+ */
 export default function GovernanceDataPage() {
-  const { data: metrics, isLoading: metricsLoading } = useQuery({
-    queryKey: ["esg-governance-metrics"],
-    queryFn: getGovernanceMetrics,
-  });
-
-  const { data: summary, isLoading: summaryLoading } = useQuery({
-    queryKey: ["esg-governance-summary"],
-    queryFn: getGovernanceSummary,
-  });
+  const [selectedRow, setSelectedRow] = useState<GovernanceDataRow | null>(
+    null
+  );
+  const detail: GovernanceDataDetail | null = useMemo(
+    () =>
+      selectedRow ? getGovernanceDetailById(selectedRow.id) : null,
+    [selectedRow]
+  );
 
   return (
     <>
@@ -26,42 +47,68 @@ export default function GovernanceDataPage() {
         title="거버넌스 데이터"
         description="거버넌스(Governance) 관련 ESG 지표를 조회하고 관리합니다."
       >
-        <div className="flex flex-wrap items-center gap-3">
-          <EsgSubNav />
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <PenLine className="mr-1.5 h-4 w-4" />
-              데이터 입력
-            </Button>
-            <Button variant="outline" size="sm">
-              <FileUp className="mr-1.5 h-4 w-4" />
-              Excel 업로드
-            </Button>
-            <Button variant="outline" size="sm">
-              <Plus className="mr-1.5 h-4 w-4" />
-              지표 추가
-            </Button>
-          </div>
-        </div>
+        <EsgSubNav />
       </PageHeader>
 
       <div className="mt-8 space-y-8">
+        {/* 1. KPI Summary Section */}
         <section>
-          <h2 className="mb-4 text-sm font-medium text-muted-foreground">
-            요약
+          <h2 className="sr-only">KPI 요약</h2>
+          <GovernanceKpiCards items={MOCK_GOV_KPI} />
+        </section>
+
+        {/* 2. AI Insight Panel */}
+        <section>
+          <GovernanceAiInsight data={MOCK_GOV_AI_INSIGHT} />
+        </section>
+
+        {/* 3. Filter Bar */}
+        <section>
+          <GovernanceFilters />
+        </section>
+
+        {/* 4. Governance Data Table */}
+        <section>
+          <h2 className="mb-3 text-sm font-medium text-muted-foreground">
+            거버넌스 데이터 목록
           </h2>
-          <EsgSummaryCards
-            items={summary ?? []}
-            isLoading={summaryLoading}
+          <GovernanceDataTable
+            rows={MOCK_GOV_TABLE_ROWS}
+            onRowClick={setSelectedRow}
           />
         </section>
 
-        <section>
-          <EsgMetricsTable
-            data={metrics ?? []}
-            isLoading={metricsLoading}
-            title="거버넌스 지표 목록"
+        {/* 5. Detail Drawer */}
+        {selectedRow && (
+          <GovernanceDetailDrawer
+            detail={detail}
+            onClose={() => setSelectedRow(null)}
           />
+        )}
+
+        {/* 6. Data Quality Section */}
+        <section>
+          <h2 className="mb-3 text-sm font-medium text-muted-foreground">
+            데이터 품질
+          </h2>
+          <DataQualityCards
+            items={
+              MOCK_GOV_DATA_QUALITY as unknown as DataQualityScore[]
+            }
+          />
+        </section>
+
+        {/* 7. Trend Analytics Section */}
+        <section>
+          <h2 className="mb-3 text-sm font-medium text-muted-foreground">
+            추이 분석
+          </h2>
+          <GovernanceTrendCharts trend={MOCK_GOV_TREND} />
+        </section>
+
+        {/* 8. Governance Category Breakdown */}
+        <section>
+          <GovernanceCategoryBreakdown items={MOCK_GOV_CATEGORY_BREAKDOWN} />
         </section>
       </div>
     </>

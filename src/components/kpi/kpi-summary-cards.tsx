@@ -16,8 +16,7 @@ export function KpiSummaryCards({ items, isLoading }: KpiSummaryCardsProps) {
       isLoading={isLoading}
       skeletonCount={4}
       className="grid gap-4 sm:grid-cols-4"
-    >
-      {(item, index) => (
+      renderItem={(item, index) => (
         <Card key={index} className="overflow-hidden">
           <CardHeader className="p-4 pb-0">
             <p className="text-sm font-medium text-muted-foreground">
@@ -33,6 +32,6 @@ export function KpiSummaryCards({ items, isLoading }: KpiSummaryCardsProps) {
           </CardContent>
         </Card>
       )}
-    </SummaryCardGrid>
+    />
   );
 }

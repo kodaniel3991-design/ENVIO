@@ -17,8 +17,7 @@ export function ReductionKpiCards({
       isLoading={isLoading}
       skeletonCount={4}
       className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-    >
-      {(kpi) => (
+      renderItem={(kpi) => (
         <Card key={kpi.id}>
           <CardHeader className="p-4 pb-1">
             <p className="text-sm font-medium text-muted-foreground">
@@ -46,7 +45,7 @@ export function ReductionKpiCards({
           </CardContent>
         </Card>
       )}
-    </SummaryCardGrid>
+    />
   );
 }
 

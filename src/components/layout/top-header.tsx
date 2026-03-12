@@ -33,7 +33,7 @@ function isItemActive(pathname: string, item: NavItem): boolean {
 }
 
 export function TopHeader() {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border bg-card px-6">

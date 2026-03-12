@@ -34,7 +34,6 @@ const nextConfig = {
       { source: "/reports", destination: "/reports/esg", permanent: false },
       { source: "/reports/framework", destination: "/reports/frameworks/k-esg", permanent: false },
       { source: "/reports/databook", destination: "/reports/esg", permanent: false },
-      { source: "/reports/mapping", destination: "/reports/esg", permanent: false },
       // 설정
       { source: "/settings", destination: "/settings/organization", permanent: false },
       { source: "/settings/integration", destination: "/settings/integrations", permanent: false },

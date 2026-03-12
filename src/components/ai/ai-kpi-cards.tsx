@@ -11,8 +11,7 @@ export function AiKpiCards({ items, isLoading }: { items: AiKpiCard[]; isLoading
       isLoading={isLoading}
       skeletonCount={4}
       className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-    >
-      {(item) => (
+      renderItem={(item) => (
         <Card key={item.id}>
           <CardHeader className="p-4 pb-1">
             <p className="text-sm font-medium text-muted-foreground">{item.label}</p>
@@ -31,7 +30,7 @@ export function AiKpiCards({ items, isLoading }: { items: AiKpiCard[]; isLoading
           </CardContent>
         </Card>
       )}
-    </SummaryCardGrid>
+    />
   );
 }
 

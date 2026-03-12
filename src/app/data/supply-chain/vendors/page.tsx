@@ -1,1 +1,1 @@
-export { default } from "@/app/scope3/vendors/page";
+export { default } from "@/app/dashboard/supply-chain/suppliers/page";
