@@ -3,13 +3,8 @@
  * 환경 데이터 구조에 맞춰 설계, 추후 API 스키마와 교체 가능
  */
 
-/** 테이블 행 데이터 상태 (환경 데이터와 동일) */
-export type DataStatus =
-  | "verified"
-  | "estimated"
-  | "pending"
-  | "missing"
-  | "ai_anomaly";
+// DataStatus, DataQualityScore는 types/index.ts에서 통합 관리
+export type { DataStatus, DataQualityScore } from "@/types";
 
 /** 데이터 출처 */
 export type SocialDataSource =
@@ -32,7 +27,7 @@ export interface SocialDataRow {
   period: string;
   source: SocialDataSource;
   evidenceCount: number;
-  status: DataStatus;
+  status: import("@/types").DataStatus;
 }
 
 /** KPI 요약 카드 항목 */
@@ -53,19 +48,11 @@ export interface SocialAiInsight {
   hasAnomaly: boolean;
 }
 
-/** 데이터 품질 점수 (환경과 동일 구조) */
-export interface DataQualityScore {
-  id: string;
-  label: string;
-  value: number;
-  description?: string;
-}
-
 /** 월별 사회 지표 추이 (카테고리별) */
 export interface SocialTrendPoint {
   month: string;
   humanRights: number;   // 인권 지표
-  labor: number;        // 노동
+  labor: number;         // 노동
   safety: number;        // 안전보건
   community: number;     // 지역사회
 }

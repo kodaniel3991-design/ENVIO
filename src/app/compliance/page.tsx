@@ -7,24 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShieldCheck } from "lucide-react";
-
-function statusVariant(
-  status: string
-): "success" | "warning" | "danger" | "secondary" {
-  switch (status) {
-    case "compliant":
-      return "success";
-    case "partial":
-      return "warning";
-    case "non_compliant":
-      return "danger";
-    default:
-      return "secondary";
-  }
-}
+import { ErrorState } from "@/components/common/error-state";
+import { getApiErrorMessage } from "@/hooks/use-api-error";
+import {
+  COMPLIANCE_STATUS_LABEL,
+  COMPLIANCE_STATUS_VARIANT,
+} from "@/lib/constants/status-badges";
 
 export default function ComplianceStatusPage() {
-  const { data: items, isLoading } = useQuery({
+  const { data: items, isLoading, error, isError, refetch } = useQuery({
     queryKey: ["compliance"],
     queryFn: getComplianceStatus,
   });
@@ -51,6 +42,8 @@ export default function ComplianceStatusPage() {
           <CardContent>
             {isLoading ? (
               <Skeleton className="h-64 w-full rounded-lg" />
+            ) : isError ? (
+              <ErrorState message={getApiErrorMessage(error)} onRetry={() => refetch()} />
             ) : (
               <div className="space-y-0 divide-y divide-border">
                 {items?.map((item) => (
@@ -70,8 +63,8 @@ export default function ComplianceStatusPage() {
                           Due {item.dueDate}
                         </span>
                       )}
-                      <Badge variant={statusVariant(item.status)}>
-                        {item.status.replace("_", " ")}
+                      <Badge variant={COMPLIANCE_STATUS_VARIANT[item.status] ?? "secondary"}>
+                        {COMPLIANCE_STATUS_LABEL[item.status] ?? item.status}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
                         Checked {item.lastChecked}

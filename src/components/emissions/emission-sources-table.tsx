@@ -5,6 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import type { EmissionSourceItem, Scope } from "@/types";
 import { formatMtCO2e } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DATA_STATUS_LABEL,
+  DATA_STATUS_VARIANT,
+} from "@/lib/constants/status-badges";
+import { usePagination } from "@/hooks/use-pagination";
+import { PaginationBar } from "@/components/common/pagination-bar";
 
 interface EmissionSourcesTableProps {
   data: EmissionSourceItem[];
@@ -18,29 +24,14 @@ const SCOPE_LABEL: Record<Scope, string> = {
   scope3: "Scope 3",
 };
 
-const statusLabel: Record<
-  NonNullable<EmissionSourceItem["status"]>,
-  string
-> = {
-  verified: "검증됨",
-  estimated: "추정",
-  pending: "입력대기",
-};
-
-const statusVariant: Record<
-  NonNullable<EmissionSourceItem["status"]>,
-  "success" | "warning" | "secondary"
-> = {
-  verified: "success",
-  estimated: "warning",
-  pending: "secondary",
-};
-
 export function EmissionSourcesTable({
   data,
   isLoading,
   title = "배출원 목록",
 }: EmissionSourcesTableProps) {
+  const pagination = usePagination({ totalItems: data.length, pageSize: 10 });
+  const visible = pagination.paginate(data);
+
   if (isLoading) {
     return (
       <Card className="overflow-hidden">
@@ -64,7 +55,7 @@ export function EmissionSourcesTable({
       </CardHeader>
       <CardContent className="p-4">
         <div className="overflow-x-auto rounded-md border border-border">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" aria-label={title}>
             <thead>
               <tr className="border-b border-border bg-muted/50 text-left text-muted-foreground">
                 <th className="px-4 py-3 font-medium">Scope</th>
@@ -76,7 +67,7 @@ export function EmissionSourcesTable({
               </tr>
             </thead>
             <tbody>
-              {data.map((row) => (
+              {visible.map((row) => (
                 <tr
                   key={row.id}
                   className="border-b border-border/50 transition-colors hover:bg-muted/30"
@@ -97,10 +88,10 @@ export function EmissionSourcesTable({
                   <td className="px-4 py-3">
                     {row.status ? (
                       <Badge
-                        variant={statusVariant[row.status]}
+                        variant={DATA_STATUS_VARIANT[row.status]}
                         className="text-xs"
                       >
-                        {statusLabel[row.status]}
+                        {DATA_STATUS_LABEL[row.status]}
                       </Badge>
                     ) : (
                       "—"
@@ -111,6 +102,7 @@ export function EmissionSourcesTable({
             </tbody>
           </table>
         </div>
+        <PaginationBar pagination={pagination} totalItems={data.length} />
       </CardContent>
     </Card>
   );

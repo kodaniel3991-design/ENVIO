@@ -18,50 +18,75 @@ import {
   mockEvidenceFiles,
   mockPortalSettings,
 } from "@/lib/mock";
-
-function delay(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
+import { delay, apiCall } from "@/lib/api";
+import {
+  PortalVendorSchema,
+  PortalInvitationSchema,
+  SubmissionByVendorSchema,
+  Scope3CategoryPortalSchema,
+  VendorEsgScoreSchema,
+  VerificationItemSchema,
+  EvidenceFileSchema,
+  PortalSettingsSchema,
+} from "@/lib/schemas";
 
 export async function getPortalVendors(): Promise<PortalVendor[]> {
-  await delay(200);
-  return mockPortalVendors;
+  return apiCall(async () => {
+    await delay(200);
+    return PortalVendorSchema.array().parse(mockPortalVendors);
+  });
 }
 
 export async function getPortalInvitations(): Promise<PortalInvitation[]> {
-  await delay(150);
-  return mockPortalInvitations;
+  return apiCall(async () => {
+    await delay(150);
+    return PortalInvitationSchema.array().parse(mockPortalInvitations);
+  });
 }
 
 export async function getSubmissions(): Promise<SubmissionByVendor[]> {
-  await delay(200);
-  return mockSubmissions;
+  return apiCall(async () => {
+    await delay(200);
+    return SubmissionByVendorSchema.array().parse(mockSubmissions);
+  });
 }
 
 export async function getScope3CategoriesPortal(): Promise<Scope3CategoryPortal[]> {
-  await delay(180);
-  return mockScope3CategoriesPortal;
+  return apiCall(async () => {
+    await delay(180);
+    return Scope3CategoryPortalSchema.array().parse(mockScope3CategoriesPortal);
+  });
 }
 
 export async function getVendorEsgScores(): Promise<VendorEsgScore[]> {
-  await delay(200);
-  return mockVendorEsgScores;
+  return apiCall(async () => {
+    await delay(200);
+    return VendorEsgScoreSchema.array().parse(mockVendorEsgScores);
+  });
 }
 
 export async function getVerificationItems(): Promise<VerificationItem[]> {
-  await delay(200);
-  return mockVerificationItems;
+  return apiCall(async () => {
+    await delay(200);
+    return VerificationItemSchema.array().parse(mockVerificationItems);
+  });
 }
 
-export async function getEvidenceFiles(verificationId?: string): Promise<EvidenceFile[]> {
-  await delay(150);
-  if (verificationId) {
-    return mockEvidenceFiles.filter((e) => e.verificationId === verificationId);
-  }
-  return mockEvidenceFiles;
+export async function getEvidenceFiles(
+  verificationId?: string
+): Promise<EvidenceFile[]> {
+  return apiCall(async () => {
+    await delay(150);
+    const data = verificationId
+      ? mockEvidenceFiles.filter((e) => e.verificationId === verificationId)
+      : mockEvidenceFiles;
+    return EvidenceFileSchema.array().parse(data);
+  });
 }
 
 export async function getPortalSettings(): Promise<PortalSettings> {
-  await delay(100);
-  return mockPortalSettings;
+  return apiCall(async () => {
+    await delay(100);
+    return PortalSettingsSchema.parse(mockPortalSettings);
+  });
 }

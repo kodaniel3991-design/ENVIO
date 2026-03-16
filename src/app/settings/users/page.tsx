@@ -14,7 +14,10 @@ import {
   setUserStatus,
   upsertUser,
 } from "@/services/api";
-import { Plus, Save, Trash2, UserPlus } from "lucide-react";
+import { Plus, Trash2, UserPlus } from "lucide-react";
+import { USER_STATUS_LABEL } from "@/lib/constants/status-badges";
+import { usePagination } from "@/hooks/use-pagination";
+import { PaginationBar } from "@/components/common/pagination-bar";
 
 const inputClass =
   "h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring";
@@ -22,17 +25,6 @@ const inputClass =
 function trimOptional(s: string | undefined): string | undefined {
   const t = s?.trim();
   return t === "" ? undefined : t;
-}
-
-function statusLabel(status: UserStatus): string {
-  switch (status) {
-    case "active":
-      return "활성";
-    case "invited":
-      return "초대됨";
-    case "disabled":
-      return "비활성";
-  }
 }
 
 export default function SettingsUsersPage() {
@@ -91,6 +83,9 @@ export default function SettingsUsersPage() {
       return hay.includes(q);
     });
   }, [users, query]);
+
+  const pagination = usePagination({ totalItems: filtered.length, pageSize: 10 });
+  const visibleUsers = pagination.paginate(filtered);
 
   const roleNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -271,7 +266,7 @@ export default function SettingsUsersPage() {
               </p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[980px] text-sm">
+                <table className="w-full min-w-[980px] text-sm" aria-label="사용자 목록">
                   <thead>
                     <tr className="border-b border-border text-left text-muted-foreground">
                       <th className="w-28 pb-2 pr-2 font-medium">이름</th>
@@ -287,7 +282,7 @@ export default function SettingsUsersPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
-                    {filtered.map((u) => (
+                    {visibleUsers.map((u) => (
                       <tr key={u.id}>
                         <td className="py-2 pr-2 font-medium">{u.name}</td>
                         <td className="py-2 pr-2 text-muted-foreground">
@@ -322,9 +317,9 @@ export default function SettingsUsersPage() {
                             className={inputClass}
                             disabled={statusMutation.isPending}
                           >
-                            <option value="active">{statusLabel("active")}</option>
-                            <option value="invited">{statusLabel("invited")}</option>
-                            <option value="disabled">{statusLabel("disabled")}</option>
+                            <option value="active">{USER_STATUS_LABEL["active"]}</option>
+                            <option value="invited">{USER_STATUS_LABEL["invited"]}</option>
+                            <option value="disabled">{USER_STATUS_LABEL["disabled"]}</option>
                           </select>
                         </td>
                         <td className="py-2 pr-2 text-muted-foreground">
@@ -347,6 +342,7 @@ export default function SettingsUsersPage() {
                     ))}
                   </tbody>
                 </table>
+                <PaginationBar pagination={pagination} totalItems={filtered.length} />
               </div>
             )}
 

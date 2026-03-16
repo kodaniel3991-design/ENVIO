@@ -20,52 +20,78 @@ import {
   mockAiSupplyChainRisk,
   mockAiInsightReports,
 } from "@/lib/mock";
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import { delay, apiCall } from "@/lib/api";
+import {
+  AIInsightSchema,
+  AiKpiCardSchema,
+  AiAnomalyItemSchema,
+  AiScenarioItemSchema,
+  AiForecastPointSchema,
+  AiRoiPointSchema,
+  AiRiskSummarySchema,
+  AiSupplyChainRiskItemSchema,
+  AiInsightReportItemSchema,
+} from "@/lib/schemas";
 
 export async function getAIInsights(): Promise<AIInsight[]> {
-  await delay(200);
-  return mockAIInsights;
+  return apiCall(async () => {
+    await delay(200);
+    return AIInsightSchema.array().parse(mockAIInsights);
+  });
 }
 
 export async function getAiKpiCards(): Promise<AiKpiCard[]> {
-  await delay(150);
-  return mockAiKpiCards;
+  return apiCall(async () => {
+    await delay(150);
+    return AiKpiCardSchema.array().parse(mockAiKpiCards);
+  });
 }
 
 export async function getAiAnomalies(): Promise<AiAnomalyItem[]> {
-  await delay(200);
-  return mockAiAnomalies;
+  return apiCall(async () => {
+    await delay(200);
+    return AiAnomalyItemSchema.array().parse(mockAiAnomalies);
+  });
 }
 
 export async function getAiScenarios(): Promise<AiScenarioItem[]> {
-  await delay(200);
-  return mockAiScenarios;
+  return apiCall(async () => {
+    await delay(200);
+    return AiScenarioItemSchema.array().parse(mockAiScenarios);
+  });
 }
 
 export async function getAiForecast(): Promise<AiForecastPoint[]> {
-  await delay(150);
-  return mockAiForecast;
+  return apiCall(async () => {
+    await delay(150);
+    return AiForecastPointSchema.array().parse(mockAiForecast);
+  });
 }
 
 export async function getAiRoi(): Promise<AiRoiPoint[]> {
-  await delay(150);
-  return mockAiRoi;
+  return apiCall(async () => {
+    await delay(150);
+    return AiRoiPointSchema.array().parse(mockAiRoi);
+  });
 }
 
 export async function getAiRiskSummary(): Promise<AiRiskSummary> {
-  await delay(120);
-  return mockAiRiskSummary;
+  return apiCall(async () => {
+    await delay(120);
+    return AiRiskSummarySchema.parse(mockAiRiskSummary);
+  });
 }
 
 export async function getAiSupplyChainRisk(): Promise<AiSupplyChainRiskItem[]> {
-  await delay(150);
-  return mockAiSupplyChainRisk;
+  return apiCall(async () => {
+    await delay(150);
+    return AiSupplyChainRiskItemSchema.array().parse(mockAiSupplyChainRisk);
+  });
 }
 
 export async function getAiInsightReports(): Promise<AiInsightReportItem[]> {
-  await delay(150);
-  return mockAiInsightReports;
+  return apiCall(async () => {
+    await delay(150);
+    return AiInsightReportItemSchema.array().parse(mockAiInsightReports);
+  });
 }

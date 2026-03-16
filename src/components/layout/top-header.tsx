@@ -17,7 +17,6 @@ import {
   isActivePath,
   type NavItem,
   type NavSectionItem,
-  type NavLinkItem,
 } from "@/lib/navigation";
 
 function isSectionActive(pathname: string, section: NavSectionItem): boolean {
@@ -38,7 +37,7 @@ export function TopHeader() {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border bg-card px-6">
       <div className="flex items-center gap-8">
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href="/dashboard" aria-label="CarbonOS 홈" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
             <span className="text-lg font-bold text-primary-foreground">C</span>
           </div>
@@ -57,6 +56,7 @@ export function TopHeader() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "text-sm font-medium transition-colors",
                     active

@@ -1,11 +1,20 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface UIState {
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
-export const useUIStore = create<UIState>((set) => ({
-  sidebarCollapsed: false,
-  setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
-}));
+export const useUIStore = create<UIState>()(
+  persist(
+    (set) => ({
+      sidebarCollapsed: false,
+      setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
+    }),
+    {
+      name: "carbonos-ui", // localStorage key
+      partialize: (state) => ({ sidebarCollapsed: state.sidebarCollapsed }),
+    }
+  )
+);

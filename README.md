@@ -1,15 +1,18 @@
 # ENVIO – ESG & Carbon Management Platform
 
-Premium enterprise SaaS dashboard for ESG carbon management. Frontend-only implementation with mock data and a clear path to FastAPI backend integration.
+Premium enterprise SaaS dashboard for ESG and carbon management. Frontend-only implementation with mock data and a clear path to FastAPI backend integration.
 
 ## Tech Stack
 
-- **Next.js 14** (App Router)
-- **TypeScript**
-- **Tailwind CSS** + **shadcn/ui** (Radix-based components)
-- **Recharts** for charts
-- **Zustand** for client state
-- **TanStack React Query** for server state (ready for API swap)
+| 영역 | 라이브러리 / 버전 |
+|------|------------------|
+| Framework | Next.js 14 (App Router) |
+| Language | TypeScript 5.6 |
+| Styling | Tailwind CSS 3.4 + shadcn/ui (Radix UI) |
+| Charts | Recharts 2.13 |
+| Client State | Zustand 5.0 |
+| Server State | TanStack React Query 5.59 |
+| Font | Pretendard Variable |
 
 ## Getting Started
 
@@ -18,7 +21,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) → `/dashboard` 로 자동 리다이렉트.
 
 ### 400/500 에러가 나올 때 (화면 비거나 Internal Server Error)
 
@@ -49,6 +52,7 @@ Open [http://localhost:3000](http://localhost:3000).
 |------|------|
 | `npm run dev` | 개발 서버 (port 3000) |
 | `npm run dev:clean` | `.next` 삭제 후 dev 시작 (500 발생 시 권장) |
+| `npm run dev:fresh` | `.next` 삭제 + node_modules 캐시 정리 후 dev 시작 |
 | `npm run dev:turbo` | Turbopack 개발 서버 (Windows 파일 잠금 완화) |
 | `npm run build` | 프로덕션 빌드 |
 | `npm run start` | 프로덕션 빌드 실행 |
@@ -59,18 +63,20 @@ Open [http://localhost:3000](http://localhost:3000).
 | 모듈 | 경로 | 설명 |
 |------|------|------|
 | 대시보드 | `/dashboard` | KPI 요약, AI 인사이트, 핵심 지표 |
-| 배출량 분석 | `/analytics` | Scope 1/2/3 배출량 분석, 이상 탐지, 시나리오 |
-| 탄소 플로우 | `/carbon-flow` | 탄소 흐름 시각화 |
-| ESG 데이터 | `/esg` | 환경·사회·거버넌스 데이터 입력 및 관리 |
-| 데이터 관리 | `/data` | 배출량·ESG·공급망 데이터, 검증, 승인 |
-| 공급망 포털 | `/scope3`, `/data/supply-chain` | 협력사 관리, Scope 3, ESG 평가 |
+| 데이터 관리 | `/data` | 배출량·ESG·공급망 데이터, 검증, 승인 허브 |
+| 배출량 | `/data/emissions/scope1\|2\|3` | Scope 1/2/3 배출량 분석 및 추적 |
+| ESG 데이터 | `/data/esg/environment\|governance\|social` | 환경·사회·거버넌스 데이터 입력 및 관리 |
+| 공급망 포털 | `/data/supply-chain` | 협력사 관리, ESG 평가, Scope 3 데이터 |
+| 데이터 검증 | `/data/verification` | 데이터 유효성 검증 워크플로우 |
+| 데이터 승인 | `/data/approval` | 데이터 승인 워크플로우 |
+| 분석 | `/analytics` | 배출량 분석, 이상 탐지, 시나리오 |
+| 탄소 플로우 | `/analytics/carbon-flow` | 탄소 흐름 시각화 |
 | KPI | `/kpi` | KPI 마스터, 목표, 성과, 커버리지 |
 | 보고서 | `/reports` | ESG 보고서, 프레임워크(GRI/CSRD/ISSB/K-ESG), 감사 추적 |
 | 중요성 평가 | `/materiality` | 중요성 이슈, 매트릭스, 이해관계자 |
-| 감축 시뮬레이터 | `/simulator` | 감축 전략 시뮬레이션, 프로젝트 관리 |
-| 실행 계획 | `/action` | 로드맵, 목표, 프로젝트, 크레딧 |
+| 실행 계획 | `/action` | 감축 목표, 프로젝트, 로드맵, 크레딧 |
 | 규정 준수 | `/compliance` | 규정 준수 현황 |
-| 설정 | `/settings` | 조직, 사용자, 역할, 통합, 프레임워크 등 |
+| 설정 | `/settings` | 조직, 사용자, 역할, 통합, 프레임워크 |
 
 ## Folder Structure
 
@@ -78,26 +84,21 @@ Open [http://localhost:3000](http://localhost:3000).
 src/
 ├── app/                        # App Router pages and layout
 │   ├── action/                 # 실행 계획 (roadmap, targets, projects, credits)
-│   ├── analytics/              # 배출량 분석 (scope1/2/3, scenarios, anomalies)
-│   ├── api/                    # API routes (공급망 vendors)
-│   ├── carbon-flow/            # 탄소 플로우
+│   ├── analytics/              # 배출량 분석 (scenarios, anomalies, carbon-flow)
+│   ├── api/                    # Next.js API routes (supply-chain vendors)
 │   ├── compliance/             # 규정 준수 현황
-│   ├── dashboard/              # 메인 대시보드 + 데이터 관리/공급망 서브 페이지
-│   ├── data/                   # 데이터 관리
+│   ├── dashboard/              # 메인 대시보드
+│   ├── data/                   # 데이터 관리 허브
 │   │   ├── approval/           # 승인 관리
-│   │   ├── emissions/          # 배출량 데이터 (scope1/2/3)
+│   │   ├── emissions/          # 배출량 데이터 (scope1/scope2/scope3)
 │   │   ├── esg/                # ESG 데이터 (environment/governance/social)
-│   │   ├── integrations/       # ERP/Excel/IoT 연동
-│   │   ├── supply-chain/       # 공급망 데이터 (vendors, assessment, risk 등)
+│   │   ├── integrations/       # ERP·Excel·IoT 연동
+│   │   ├── supply-chain/       # 공급망 (vendors, assessment, risk, submissions 등)
 │   │   └── verification/       # 데이터 검증
-│   ├── esg/                    # ESG 페이지 (environment, governance, social, calendar, tasks)
-│   ├── insights/               # AI 인사이트 (anomalies, reports, scenarios)
 │   ├── kpi/                    # KPI 관리
 │   ├── materiality/            # 중요성 평가
 │   ├── reports/                # 보고서 (frameworks, templates, audit-trail, attachments)
-│   ├── scope3/                 # 공급망 포털 (vendors, invite, submissions 등)
-│   ├── settings/               # 시스템 설정
-│   └── simulator/              # 감축 시뮬레이터
+│   └── settings/               # 시스템 설정
 ├── components/
 │   ├── ai/                     # AI KPI 카드
 │   ├── approval/               # 승인 워크플로우 컴포넌트
@@ -110,7 +111,6 @@ src/
 │   ├── kpi/                    # KPI 컴포넌트
 │   ├── layout/                 # Sidebar, PageHeader, TopHeader, Breadcrumb
 │   ├── materiality/            # 중요성 평가 컴포넌트
-│   ├── portal/                 # 공급망 포털 컴포넌트 (legacy)
 │   ├── reduction/              # 감축 KPI 컴포넌트
 │   ├── scope1/                 # Scope 1 컴포넌트
 │   ├── scope2/                 # Scope 2 컴포넌트
@@ -130,15 +130,25 @@ src/
 │   │   ├── supplier-portal.ts
 │   │   ├── supply-chain-portal.ts
 │   │   ├── validation-data.ts
-│   │   └── ...
-│   ├── navigation.ts           # 네비게이션 구조 정의
+│   │   └── ...                 # 기타 mock 파일 (emissions, kpi, reports 등)
+│   ├── navigation.ts           # 네비게이션 구조 정의 (한글 레이블 + 영문 경로)
 │   └── utils.ts
 ├── services/
 │   └── api/                    # API 레이어 (백엔드 연동 시 여기만 교체)
-├── stores/                     # Zustand stores
-│   └── ui-store.ts
+│       ├── index.ts            # 전체 서비스 export
+│       ├── emissions.ts
+│       ├── dashboard.ts
+│       ├── esg.ts
+│       ├── supply-chain.ts
+│       ├── kpi.ts
+│       ├── reports.ts
+│       ├── compliance.ts
+│       ├── users.ts
+│       └── ...
+├── stores/
+│   └── ui-store.ts             # Zustand UI 상태 (사이드바, 테마 등)
 └── types/
-    ├── index.ts                # 공통 TypeScript 타입
+    ├── index.ts                # 공통 TypeScript 타입 (Scope, EmissionSummary 등)
     ├── approval-data.ts
     ├── environment-data.ts
     ├── governance-data.ts
@@ -149,30 +159,45 @@ src/
 
 ## 공급망 포털 (Supply Chain Portal)
 
-상단 메뉴 **공급망 포털** 또는 `/scope3` 경로로 접근합니다.
+사이드 메뉴 **데이터 관리 → 공급망** 또는 `/data/supply-chain` 경로로 접근합니다.
 
 | 경로 | 페이지 |
 |------|--------|
-| `/scope3` | 포털 대시보드 (요약 카드, Scope3 완성도 차트) |
-| `/scope3/vendors` | 협력사 관리 (테이블, 검색/필터, 초대·재발송 모달) |
-| `/scope3/invite` | 협력사 초대 (발송 목록, 상태, 재발송) |
-| `/scope3/submissions` | ESG/탄소 데이터 제출 현황 |
-| `/scope3/categories` | Scope 3 카테고리 관리 |
-| `/scope3/assessment` | 협력사 ESG 평가 (ESG 점수 카드, 리스크 뱃지) |
-| `/scope3/verification` | 데이터 검증 (워크플로우, 증빙 파일 목록) |
-| `/scope3/settings` | 포털 설정 |
+| `/data/supply-chain` | 포털 대시보드 (요약 카드, Scope 3 완성도 차트) |
+| `/data/supply-chain/vendors` | 협력사 관리 (테이블, 검색/필터, 초대·재발송 모달) |
+| `/data/supply-chain/invite` | 협력사 초대 (발송 목록, 상태, 재발송) |
+| `/data/supply-chain/submissions` | ESG/탄소 데이터 제출 현황 |
+| `/data/supply-chain/categories` | Scope 3 카테고리 관리 |
+| `/data/supply-chain/assessment` | 협력사 ESG 평가 (ESG 점수 카드, 리스크 뱃지) |
+| `/data/supply-chain/verification` | 데이터 검증 (워크플로우, 증빙 파일 목록) |
+| `/data/supply-chain/settings` | 포털 설정 |
 
 ## ESG 데이터 관리
 
+사이드 메뉴 **데이터 관리 → ESG 데이터** 또는 `/data/esg` 경로로 접근합니다.
+
 | 경로 | 페이지 |
 |------|--------|
-| `/esg/environment` | 환경 데이터 (온실가스, 에너지, 물, 폐기물) |
-| `/esg/governance` | 거버넌스 데이터 (이사회, 윤리, 리스크) |
-| `/esg/social` | 소셜 데이터 (인력, 안전, 다양성) |
-| `/esg/calendar` | ESG 일정 관리 |
-| `/esg/tasks` | ESG 과업 관리 |
+| `/data/esg/environment` | 환경 데이터 (온실가스, 에너지, 물, 폐기물) |
+| `/data/esg/governance` | 거버넌스 데이터 (이사회, 윤리, 리스크) |
+| `/data/esg/social` | 소셜 데이터 (인력, 안전, 다양성) |
 | `/data/approval` | 데이터 승인 워크플로우 |
 | `/data/verification` | 데이터 검증 |
+
+## Route Redirects
+
+이전 경로들은 `next.config.mjs`에서 새 경로로 자동 리다이렉트됩니다.
+
+| 이전 경로 | 새 경로 |
+|-----------|---------|
+| `/` | `/dashboard` |
+| `/esg/*` | `/data/esg/*` |
+| `/scope3/*` | `/data/supply-chain/*` |
+| `/analytics/scope*` | `/data/emissions/scope*` |
+| `/insights/*` | `/analytics/*` |
+| `/carbon-flow` | `/analytics/carbon-flow` |
+| `/simulator/*` | `/action/*` |
+| `/reports/esg-report` | `/reports/frameworks/gri` |
 
 ## Backend Integration
 
@@ -185,3 +210,4 @@ src/
 - Dark enterprise UI (Apple / Stripe / Linear inspired).
 - CSS variables in `globals.css` for theming; `carbon-*` tokens for semantic colors.
 - Desktop-first; layout is responsive.
+- Font: Pretendard Variable (woff2, locally hosted).

@@ -7,37 +7,47 @@ import {
   mockGovernanceMetrics,
   mockGovernanceSummary,
 } from "@/lib/mock/esg";
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import { delay, apiCall } from "@/lib/api";
+import { EsgMetricItemSchema, EsgSummaryCardSchema } from "@/lib/schemas";
 
 export async function getEnvironmentMetrics(): Promise<EsgMetricItem[]> {
-  await delay(280);
-  return mockEnvironmentMetrics;
+  return apiCall(async () => {
+    await delay(280);
+    return EsgMetricItemSchema.array().parse(mockEnvironmentMetrics);
+  });
 }
 
 export async function getEnvironmentSummary(): Promise<EsgSummaryCard[]> {
-  await delay(150);
-  return mockEnvironmentSummary;
+  return apiCall(async () => {
+    await delay(150);
+    return EsgSummaryCardSchema.array().parse(mockEnvironmentSummary);
+  });
 }
 
 export async function getSocialMetrics(): Promise<EsgMetricItem[]> {
-  await delay(280);
-  return mockSocialMetrics;
+  return apiCall(async () => {
+    await delay(280);
+    return EsgMetricItemSchema.array().parse(mockSocialMetrics);
+  });
 }
 
 export async function getSocialSummary(): Promise<EsgSummaryCard[]> {
-  await delay(150);
-  return mockSocialSummary;
+  return apiCall(async () => {
+    await delay(150);
+    return EsgSummaryCardSchema.array().parse(mockSocialSummary);
+  });
 }
 
 export async function getGovernanceMetrics(): Promise<EsgMetricItem[]> {
-  await delay(280);
-  return mockGovernanceMetrics;
+  return apiCall(async () => {
+    await delay(280);
+    return EsgMetricItemSchema.array().parse(mockGovernanceMetrics);
+  });
 }
 
 export async function getGovernanceSummary(): Promise<EsgSummaryCard[]> {
-  await delay(150);
-  return mockGovernanceSummary;
+  return apiCall(async () => {
+    await delay(150);
+    return EsgSummaryCardSchema.array().parse(mockGovernanceSummary);
+  });
 }

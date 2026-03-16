@@ -11,6 +11,7 @@ import {
   getDashboardNotifications,
 } from "@/services/api";
 import { queryKeys } from "@/lib/query-keys";
+import { useApiErrorMessage } from "@/hooks/use-api-error";
 
 export function useDashboardData() {
   const kpisQuery = useQuery({
@@ -42,6 +43,23 @@ export function useDashboardData() {
     queryFn: getDashboardNotifications,
   });
 
+  const isLoading =
+    kpisQuery.isLoading ||
+    trendQuery.isLoading ||
+    scopeDonutQuery.isLoading;
+
+  const firstError =
+    kpisQuery.error ??
+    trendQuery.error ??
+    scopeDonutQuery.error ??
+    offsetSummaryQuery.error ??
+    topVendorsQuery.error ??
+    insightsQuery.error ??
+    notificationsQuery.error ??
+    null;
+
+  const errorMessage = useApiErrorMessage(firstError);
+
   return {
     kpisQuery,
     trendQuery,
@@ -50,6 +68,8 @@ export function useDashboardData() {
     topVendorsQuery,
     insightsQuery,
     notificationsQuery,
+    isLoading,
+    firstError,
+    errorMessage,
   };
 }
-

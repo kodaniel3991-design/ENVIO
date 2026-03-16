@@ -9,7 +9,13 @@ import { GovernanceFilters } from "@/components/governance-data/governance-filte
 import { GovernanceDataTable } from "@/components/governance-data/governance-data-table";
 import { GovernanceDetailDrawer } from "@/components/governance-data/governance-detail-drawer";
 import { DataQualityCards } from "@/components/environment-data/data-quality-cards";
-import { GovernanceTrendCharts } from "@/components/governance-data/governance-trend-charts";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const GovernanceTrendCharts = dynamic(
+  () => import("@/components/governance-data/governance-trend-charts").then((m) => ({ default: m.GovernanceTrendCharts })),
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full rounded-lg" /> }
+);
 import { GovernanceCategoryBreakdown } from "@/components/governance-data/governance-category-breakdown";
 import {
   MOCK_GOV_KPI,

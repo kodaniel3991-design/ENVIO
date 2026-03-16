@@ -8,7 +8,13 @@ import { SupplierPortalInsightPanel } from "@/components/supplier-portal/supplie
 import { SupplierPortalFilters } from "@/components/supplier-portal/supplier-portal-filters";
 import { SupplierPortalTable } from "@/components/supplier-portal/supplier-portal-table";
 import { SupplierPortalDetailDrawer } from "@/components/supplier-portal/supplier-portal-detail-drawer";
-import { SupplierPortalAnalytics } from "@/components/supplier-portal/supplier-portal-analytics";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const SupplierPortalAnalytics = dynamic(
+  () => import("@/components/supplier-portal/supplier-portal-analytics").then((m) => ({ default: m.SupplierPortalAnalytics })),
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full rounded-lg" /> }
+);
 import { Scope3CoverageCard } from "@/components/supplier-portal/scope3-coverage-card";
 import {
   MOCK_SUPPLIER_SUMMARY,

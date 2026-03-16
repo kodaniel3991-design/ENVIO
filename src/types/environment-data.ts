@@ -3,13 +3,8 @@
  * 추후 API 스키마와 맞춰 교체 가능
  */
 
-/** 테이블 행 데이터 상태 */
-export type DataStatus =
-  | "verified"
-  | "estimated"
-  | "pending"
-  | "missing"
-  | "ai_anomaly";
+// DataStatus, DataQualityScore는 types/index.ts에서 통합 관리
+export type { DataStatus, DataQualityScore } from "@/types";
 
 /** 데이터 출처 */
 export type DataSource =
@@ -34,7 +29,7 @@ export interface EnvironmentDataRow {
   period: string;
   source: DataSource;
   evidenceCount: number; // 증빙 파일 수
-  status: DataStatus;
+  status: import("@/types").DataStatus;
 }
 
 /** KPI 요약 카드 항목 */
@@ -53,14 +48,6 @@ export interface EnvironmentAiInsight {
   possibleCauses: string[];
   recommendedActions: string[];
   hasAnomaly: boolean;
-}
-
-/** 데이터 품질 점수 */
-export interface DataQualityScore {
-  id: string;
-  label: string;
-  value: number; // 0-100
-  description?: string;
 }
 
 /** 월별 추이 데이터 (Scope 1·2·3) */

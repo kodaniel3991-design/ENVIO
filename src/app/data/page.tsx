@@ -10,6 +10,7 @@ import {
 } from "@/services/api";
 import { PageShell, PageSection } from "@/components/layout/page-shell";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
 import { useDataDashboard } from "@/hooks/use-data-dashboard";
@@ -23,6 +24,9 @@ export default function DataManagementLandingPage() {
     scopeBreakdownQuery,
     submissionsQuery,
     esgLoading,
+    esgErrorMessage,
+    scopeErrorMessage,
+    submissionsErrorMessage,
   } = useDataDashboard();
 
   const envSummary = envSummaryQuery.data;
@@ -65,12 +69,18 @@ export default function DataManagementLandingPage() {
               {esgLoading ? (
                 <div className="grid gap-4 sm:grid-cols-3">
                   {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="h-20 animate-pulse rounded-md bg-muted"
-                    />
+                    <Skeleton key={i} className="h-20" />
                   ))}
                 </div>
+              ) : esgErrorMessage ? (
+                <ErrorState
+                  message={esgErrorMessage}
+                  onRetry={() => {
+                    envSummaryQuery.refetch();
+                    socialSummaryQuery.refetch();
+                    govSummaryQuery.refetch();
+                  }}
+                />
               ) : (
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div>
@@ -165,12 +175,14 @@ export default function DataManagementLandingPage() {
               {scopeLoading ? (
                 <div className="flex gap-4">
                   {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="h-16 w-28 animate-pulse rounded-md bg-muted"
-                    />
+                    <Skeleton key={i} className="h-16 w-28" />
                   ))}
                 </div>
+              ) : scopeErrorMessage ? (
+                <ErrorState
+                  message={scopeErrorMessage}
+                  onRetry={() => scopeBreakdownQuery.refetch()}
+                />
               ) : (
                 <div className="grid gap-4 sm:grid-cols-3">
                   {scopeBreakdown?.map((scope) => (
@@ -214,7 +226,12 @@ export default function DataManagementLandingPage() {
             </CardHeader>
             <CardContent>
               {submissionsLoading ? (
-                <div className="h-24 animate-pulse rounded-md bg-muted" />
+                <Skeleton className="h-24" />
+              ) : submissionsErrorMessage ? (
+                <ErrorState
+                  message={submissionsErrorMessage}
+                  onRetry={() => submissionsQuery.refetch()}
+                />
               ) : (
                 <div className="flex flex-wrap items-center gap-6">
                   <div>

@@ -3,39 +3,43 @@ import {
   mockDistanceApiSettings,
   mockWorksiteLocation,
 } from "@/lib/mock/commute-distance";
+import { delay, apiCall } from "@/lib/api";
 
-// In-memory store for demo (replace with backend persistence later)
 let worksiteStore: WorksiteLocation = { ...mockWorksiteLocation };
 let apiSettingsStore: DistanceApiSettings = { ...mockDistanceApiSettings };
 
-function delay(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
 export async function getWorksiteLocation(): Promise<WorksiteLocation> {
-  await delay(120);
-  return { ...worksiteStore };
+  return apiCall(async () => {
+    await delay(120);
+    return { ...worksiteStore };
+  });
 }
 
 export async function saveWorksiteLocation(
   location: WorksiteLocation
 ): Promise<WorksiteLocation> {
-  await delay(180);
-  worksiteStore = { ...location };
-  return { ...worksiteStore };
+  return apiCall(async () => {
+    await delay(180);
+    worksiteStore = { ...location };
+    return { ...worksiteStore };
+  });
 }
 
 export async function getDistanceApiSettings(): Promise<DistanceApiSettings> {
-  await delay(120);
-  return { ...apiSettingsStore };
+  return apiCall(async () => {
+    await delay(120);
+    return { ...apiSettingsStore };
+  });
 }
 
 export async function saveDistanceApiSettings(
   settings: DistanceApiSettings
 ): Promise<DistanceApiSettings> {
-  await delay(180);
-  apiSettingsStore = { ...settings };
-  return { ...apiSettingsStore };
+  return apiCall(async () => {
+    await delay(180);
+    apiSettingsStore = { ...settings };
+    return { ...apiSettingsStore };
+  });
 }
 
 function stableHash(input: string): number {
@@ -55,8 +59,8 @@ function toFullAddress(address: string, detail?: string): string {
 
 /**
  * 주소 ↔ 주소 거리(km) 산출
- * - 현재는 외부 호출 없이 demo용으로 안정적인 pseudo 값을 반환합니다.
- * - 설정에서 API 키/Provider를 등록하면, 추후 서버에서 실제 Directions API로 교체 가능합니다.
+ * 현재는 외부 호출 없이 demo용 pseudo 값을 반환합니다.
+ * 설정에서 API 키/Provider를 등록하면, 추후 서버에서 실제 Directions API로 교체 가능합니다.
  */
 export async function calculateDistanceKm(args: {
   originAddress: string;
@@ -64,14 +68,15 @@ export async function calculateDistanceKm(args: {
   destinationAddress: string;
   destinationDetail?: string;
 }): Promise<number> {
-  await delay(140);
-  const origin = toFullAddress(args.originAddress, args.originDetail);
-  const dest = toFullAddress(args.destinationAddress, args.destinationDetail);
-  if (!origin || !dest) return 0;
+  return apiCall(async () => {
+    await delay(140);
+    const origin = toFullAddress(args.originAddress, args.originDetail);
+    const dest = toFullAddress(args.destinationAddress, args.destinationDetail);
+    if (!origin || !dest) return 0;
 
-  // Deterministic pseudo distance: 0.5km ~ 60km
-  const h = stableHash(`${origin}__${dest}`);
-  const km = 0.5 + (h % 5950) / 100; // 0.50 ~ 60.00
-  return Math.round(km * 100) / 100;
+    // Deterministic pseudo distance: 0.5km ~ 60km
+    const h = stableHash(`${origin}__${dest}`);
+    const km = 0.5 + (h % 5950) / 100;
+    return Math.round(km * 100) / 100;
+  });
 }
-

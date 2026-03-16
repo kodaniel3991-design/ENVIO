@@ -16,43 +16,71 @@ import {
   mockMaterialityVersionHistory,
   mockMaterialitySettings,
 } from "@/lib/mock";
-
-function delay(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
+import { delay, apiCall } from "@/lib/api";
+import {
+  MaterialityIssueSchema,
+  MaterialityAiRecommendationSchema,
+  MaterialityMatrixPointSchema,
+  MaterialityIssueRankingSchema,
+  MaterialityReportLinkSchema,
+  MaterialityVersionHistorySchema,
+  MaterialitySettingsSchema,
+} from "@/lib/schemas";
 
 export async function getMaterialityIssues(): Promise<MaterialityIssue[]> {
-  await delay(200);
-  return mockMaterialityIssues;
+  return apiCall(async () => {
+    await delay(200);
+    return MaterialityIssueSchema.array().parse(mockMaterialityIssues);
+  });
 }
 
 export async function getMaterialityAiRecommendations(): Promise<MaterialityAiRecommendation[]> {
-  await delay(150);
-  return mockMaterialityAiRecommendations;
+  return apiCall(async () => {
+    await delay(150);
+    return MaterialityAiRecommendationSchema.array().parse(
+      mockMaterialityAiRecommendations
+    );
+  });
 }
 
 export async function getMaterialityMatrix(): Promise<MaterialityMatrixPoint[]> {
-  await delay(150);
-  return mockMaterialityMatrix;
+  return apiCall(async () => {
+    await delay(150);
+    return MaterialityMatrixPointSchema.array().parse(mockMaterialityMatrix);
+  });
 }
 
 export async function getMaterialityRanking(): Promise<MaterialityIssueRanking[]> {
-  await delay(150);
-  return mockMaterialityRanking;
+  return apiCall(async () => {
+    await delay(150);
+    return MaterialityIssueRankingSchema.array().parse(mockMaterialityRanking);
+  });
 }
 
-export async function getMaterialityReportLinks(issueId?: string): Promise<MaterialityReportLink[]> {
-  await delay(100);
-  if (issueId) return mockMaterialityReportLinks.filter((r) => r.issueId === issueId);
-  return mockMaterialityReportLinks;
+export async function getMaterialityReportLinks(
+  issueId?: string
+): Promise<MaterialityReportLink[]> {
+  return apiCall(async () => {
+    await delay(100);
+    const data = issueId
+      ? mockMaterialityReportLinks.filter((r) => r.issueId === issueId)
+      : mockMaterialityReportLinks;
+    return MaterialityReportLinkSchema.array().parse(data);
+  });
 }
 
 export async function getMaterialityVersionHistory(): Promise<MaterialityVersionHistory[]> {
-  await delay(150);
-  return mockMaterialityVersionHistory;
+  return apiCall(async () => {
+    await delay(150);
+    return MaterialityVersionHistorySchema.array().parse(
+      mockMaterialityVersionHistory
+    );
+  });
 }
 
 export async function getMaterialitySettings(): Promise<MaterialitySettings> {
-  await delay(100);
-  return mockMaterialitySettings;
+  return apiCall(async () => {
+    await delay(100);
+    return MaterialitySettingsSchema.parse(mockMaterialitySettings);
+  });
 }

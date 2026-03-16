@@ -9,7 +9,13 @@ import { SocialFilters } from "@/components/social-data/social-filters";
 import { SocialDataTable } from "@/components/social-data/social-data-table";
 import { SocialDetailDrawer } from "@/components/social-data/social-detail-drawer";
 import { DataQualityCards } from "@/components/environment-data/data-quality-cards";
-import { SocialTrendCharts } from "@/components/social-data/social-trend-charts";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const SocialTrendCharts = dynamic(
+  () => import("@/components/social-data/social-trend-charts").then((m) => ({ default: m.SocialTrendCharts })),
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full rounded-lg" /> }
+);
 import { SocialCategoryBreakdown } from "@/components/social-data/social-category-breakdown";
 import {
   MOCK_SOCIAL_KPI,

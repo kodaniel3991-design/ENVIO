@@ -3,6 +3,32 @@
 
 export type Scope = "scope1" | "scope2" | "scope3";
 
+// ========== 공통 데이터 상태 / 품질 ==========
+
+/** 데이터 행 상태 — environment/social/governance 공통 */
+export type DataStatus =
+  | "verified"
+  | "estimated"
+  | "pending"
+  | "missing"
+  | "ai_anomaly";
+
+/** 데이터 품질 점수 카드 — environment/social/governance 공통 */
+export interface DataQualityScore {
+  id: string;
+  label: string;
+  value: number; // 0-100
+  description?: string;
+}
+
+/** 월별 데이터 포인트 — validation/approval 공통 */
+export interface MonthlyDataPoint {
+  month: number;
+  activityAmount: string | number;
+  emissions: string | number;
+  isAnomaly?: boolean;
+}
+
 export interface EmissionSummary {
   totalMtCO2e: number;
   scope1: number;

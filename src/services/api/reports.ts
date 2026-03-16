@@ -14,37 +14,56 @@ import {
   mockDisclosureFrameworkItems,
   mockMappingItems,
 } from "@/lib/mock";
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import { delay, apiCall } from "@/lib/api";
+import {
+  ESGReportSchema,
+  ReportTemplateSchema,
+  ReportGenerationReadinessSchema,
+  ReportGenerationHistoryItemSchema,
+  DisclosureFrameworkItemSchema,
+  MappingEngineItemSchema,
+} from "@/lib/schemas";
 
 export async function getESGReports(): Promise<ESGReport[]> {
-  await delay(250);
-  return mockESGReports;
+  return apiCall(async () => {
+    await delay(250);
+    return ESGReportSchema.array().parse(mockESGReports);
+  });
 }
 
 export async function getReportTemplates(): Promise<ReportTemplate[]> {
-  await delay(200);
-  return mockReportTemplates;
+  return apiCall(async () => {
+    await delay(200);
+    return ReportTemplateSchema.array().parse(mockReportTemplates);
+  });
 }
 
 export async function getReportReadiness(): Promise<ReportGenerationReadiness[]> {
-  await delay(150);
-  return mockReportReadiness;
+  return apiCall(async () => {
+    await delay(150);
+    return ReportGenerationReadinessSchema.array().parse(mockReportReadiness);
+  });
 }
 
 export async function getReportHistory(): Promise<ReportGenerationHistoryItem[]> {
-  await delay(150);
-  return mockReportHistory;
+  return apiCall(async () => {
+    await delay(150);
+    return ReportGenerationHistoryItemSchema.array().parse(mockReportHistory);
+  });
 }
 
 export async function getDisclosureFrameworkItems(): Promise<DisclosureFrameworkItem[]> {
-  await delay(200);
-  return mockDisclosureFrameworkItems;
+  return apiCall(async () => {
+    await delay(200);
+    return DisclosureFrameworkItemSchema.array().parse(
+      mockDisclosureFrameworkItems
+    );
+  });
 }
 
 export async function getMappingItems(): Promise<MappingEngineItem[]> {
-  await delay(200);
-  return mockMappingItems;
+  return apiCall(async () => {
+    await delay(200);
+    return MappingEngineItemSchema.array().parse(mockMappingItems);
+  });
 }

@@ -15,6 +15,8 @@ import { MaterialityAiCard } from "@/components/materiality/materiality-ai-card"
 import { MaterialityMatrix } from "@/components/materiality/materiality-matrix";
 import { MaterialityRanking } from "@/components/materiality/materiality-ranking";
 import { MaterialityIssueDrawer } from "@/components/materiality/materiality-issue-drawer";
+import { ErrorState } from "@/components/common/error-state";
+import { getApiErrorMessage } from "@/hooks/use-api-error";
 import type { MaterialityIssue, MaterialityEsgDimension } from "@/types";
 
 export default function MaterialityDashboardPage() {
@@ -23,10 +25,10 @@ export default function MaterialityDashboardPage() {
   const [selectedIssue, setSelectedIssue] = useState<MaterialityIssue | null>(null);
   const openDrawer = (r: MaterialityIssue) => { setSelectedIssue(r); setDrawerOpen(true); };
 
-  const { data: issues, isLoading: issuesLoading } = useQuery({ queryKey: ["materiality-issues"], queryFn: getMaterialityIssues });
-  const { data: aiRecs, isLoading: aiLoading } = useQuery({ queryKey: ["materiality-ai"], queryFn: getMaterialityAiRecommendations });
-  const { data: matrix, isLoading: matrixLoading } = useQuery({ queryKey: ["materiality-matrix"], queryFn: getMaterialityMatrix });
-  const { data: ranking, isLoading: rankLoading } = useQuery({ queryKey: ["materiality-ranking"], queryFn: getMaterialityRanking });
+  const { data: issues, isLoading: issuesLoading, error: issuesError, isError: issuesIsError, refetch: refetchIssues } = useQuery({ queryKey: ["materiality-issues"], queryFn: getMaterialityIssues });
+  const { data: aiRecs, isLoading: aiLoading, error: aiError, isError: aiIsError, refetch: refetchAi } = useQuery({ queryKey: ["materiality-ai"], queryFn: getMaterialityAiRecommendations });
+  const { data: matrix, isLoading: matrixLoading, error: matrixError, isError: matrixIsError, refetch: refetchMatrix } = useQuery({ queryKey: ["materiality-matrix"], queryFn: getMaterialityMatrix });
+  const { data: ranking, isLoading: rankLoading, error: rankError, isError: rankIsError, refetch: refetchRank } = useQuery({ queryKey: ["materiality-ranking"], queryFn: getMaterialityRanking });
 
   return (
     <div data-page="materiality-dashboard">
@@ -35,15 +37,31 @@ export default function MaterialityDashboardPage() {
       </PageHeader>
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <section>
-          <MaterialityIssueTable data={issues ?? []} isLoading={issuesLoading} onRowClick={openDrawer} dimensionFilter={dimFilter} onDimensionFilterChange={setDimFilter} />
+          {issuesIsError ? (
+            <ErrorState message={getApiErrorMessage(issuesError)} onRetry={() => refetchIssues()} />
+          ) : (
+            <MaterialityIssueTable data={issues ?? []} isLoading={issuesLoading} onRowClick={openDrawer} dimensionFilter={dimFilter} onDimensionFilterChange={setDimFilter} />
+          )}
         </section>
         <section className="space-y-6">
-          <MaterialityAiCard items={aiRecs ?? []} isLoading={aiLoading} />
-          <MaterialityRanking items={ranking ?? []} isLoading={rankLoading} />
+          {aiIsError ? (
+            <ErrorState message={getApiErrorMessage(aiError)} onRetry={() => refetchAi()} />
+          ) : (
+            <MaterialityAiCard items={aiRecs ?? []} isLoading={aiLoading} />
+          )}
+          {rankIsError ? (
+            <ErrorState message={getApiErrorMessage(rankError)} onRetry={() => refetchRank()} />
+          ) : (
+            <MaterialityRanking items={ranking ?? []} isLoading={rankLoading} />
+          )}
         </section>
       </div>
       <div className="mt-8">
-        <MaterialityMatrix points={matrix ?? []} isLoading={matrixLoading} />
+        {matrixIsError ? (
+          <ErrorState message={getApiErrorMessage(matrixError)} onRetry={() => refetchMatrix()} />
+        ) : (
+          <MaterialityMatrix points={matrix ?? []} isLoading={matrixLoading} />
+        )}
       </div>
       <MaterialityIssueDrawer open={drawerOpen} onOpenChange={setDrawerOpen} item={selectedIssue} />
     </div>

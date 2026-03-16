@@ -6,18 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import type { TopVendorEmission } from "@/types";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-
-const statusLabel: Record<TopVendorEmission["status"], string> = {
-  linked: "연동 완료",
-  pending: "입력 대기 중",
-  not_linked: "미연동",
-};
-
-const statusVariant: Record<TopVendorEmission["status"], "success" | "warning" | "secondary"> = {
-  linked: "success",
-  pending: "warning",
-  not_linked: "secondary",
-};
+import {
+  VENDOR_LINK_STATUS_LABEL,
+  VENDOR_LINK_STATUS_VARIANT,
+} from "@/lib/constants/status-badges";
 
 interface TopVendorsTableProps {
   data: TopVendorEmission[];
@@ -58,7 +50,7 @@ export function TopVendorsTable({ data, isLoading, fillHeight }: TopVendorsTable
       </CardHeader>
       <CardContent className="min-h-0 flex-1 overflow-auto p-3 pt-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-xs" aria-label="공급망 협력사별 Scope 3 배출량 상위 5개사">
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="pb-2 font-medium">배출원 / 협력사</th>
@@ -74,10 +66,10 @@ export function TopVendorsTable({ data, isLoading, fillHeight }: TopVendorsTable
                     <div className="flex flex-col gap-0.5">
                       <span className="font-medium">{row.vendorName}</span>
                       <Badge
-                        variant={statusVariant[row.status]}
+                        variant={VENDOR_LINK_STATUS_VARIANT[row.status]}
                         className="w-fit text-xs"
                       >
-                        {statusLabel[row.status]}
+                        {VENDOR_LINK_STATUS_LABEL[row.status]}
                       </Badge>
                     </div>
                   </td>

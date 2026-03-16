@@ -1,11 +1,11 @@
 import type { ComplianceItem } from "@/types";
 import { mockComplianceItems } from "@/lib/mock";
+import { delay, apiCall } from "@/lib/api";
+import { ComplianceItemSchema } from "@/lib/schemas";
 
 export async function getComplianceStatus(): Promise<ComplianceItem[]> {
-  await delay(280);
-  return mockComplianceItems;
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return apiCall(async () => {
+    await delay(280);
+    return ComplianceItemSchema.array().parse(mockComplianceItems);
+  });
 }

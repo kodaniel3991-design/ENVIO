@@ -7,12 +7,14 @@ import { KpiSubNav } from "@/components/kpi/kpi-sub-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/common/error-state";
+import { getApiErrorMessage } from "@/hooks/use-api-error";
 import type { KpiCategory } from "@/types";
 
 const CAT: Record<KpiCategory, string> = { environment: "환경", social: "사회", governance: "거버넌스", carbon: "탄소" };
 
 export default function KpiCoveragePage() {
-  const { data: list, isLoading } = useQuery({ queryKey: ["kpi-coverage"], queryFn: getKpiCoverage });
+  const { data: list, isLoading, error, isError, refetch } = useQuery({ queryKey: ["kpi-coverage"], queryFn: getKpiCoverage });
 
   return (
     <>
@@ -27,7 +29,8 @@ export default function KpiCoveragePage() {
           </CardHeader>
           <CardContent>
             {isLoading && <Skeleton className="h-48 w-full rounded-lg" />}
-            {!isLoading && (
+            {isError && <ErrorState message={getApiErrorMessage(error)} onRetry={() => refetch()} />}
+            {!isLoading && !isError && (
               <div className="space-y-4">
                 {list?.map((row) => (
                   <div key={row.category} className="rounded-lg border border-border p-4">

@@ -3,6 +3,9 @@
  * 검증 페이지 구조 재사용, 추후 API 스키마와 교체 가능
  */
 
+// MonthlyDataPoint는 types/index.ts에서 통합 관리
+export type { MonthlyDataPoint } from "@/types";
+
 /** 승인 상태 */
 export type ApprovalStatus =
   | "pending_approval"
@@ -56,18 +59,11 @@ export interface ApprovalWorkflowStep {
   description?: string;
 }
 
-/** 월별 데이터 포인트 */
-export interface MonthlyDataPoint {
-  month: number;
-  activityAmount: string | number;
-  emissions: string | number;
-}
-
 /** 상세 드로어용 확장 데이터 */
 export interface ApprovalDataDetail extends ApprovalDataRow {
   year: number;
   month?: number;
-  monthlyData: MonthlyDataPoint[];
+  monthlyData: import("@/types").MonthlyDataPoint[];
   emissionFactor: {
     value: number;
     unit: string;

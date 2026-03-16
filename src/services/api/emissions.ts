@@ -12,33 +12,46 @@ import {
   mockTrendChartData,
   mockEmissionSources,
 } from "@/lib/mock";
+import { delay, apiCall } from "@/lib/api";
+import {
+  EmissionSummarySchema,
+  EmissionTrendSchema,
+  ScopeBreakdownSchema,
+  ChartDataPointSchema,
+  EmissionSourceItemSchema,
+} from "@/lib/schemas";
 
-// Stub: replace with fetch("/api/emissions/summary") when backend is ready
 export async function getEmissionSummary(): Promise<EmissionSummary> {
-  await delay(300);
-  return mockEmissionSummary;
+  return apiCall(async () => {
+    await delay(300);
+    return EmissionSummarySchema.parse(mockEmissionSummary);
+  });
 }
 
 export async function getEmissionTrends(): Promise<EmissionTrend[]> {
-  await delay(300);
-  return mockEmissionTrends;
+  return apiCall(async () => {
+    await delay(300);
+    return EmissionTrendSchema.array().parse(mockEmissionTrends);
+  });
 }
 
 export async function getScopeBreakdown(): Promise<ScopeBreakdown[]> {
-  await delay(200);
-  return mockScopeBreakdown;
+  return apiCall(async () => {
+    await delay(200);
+    return ScopeBreakdownSchema.array().parse(mockScopeBreakdown);
+  });
 }
 
 export async function getTrendChartData(): Promise<ChartDataPoint[]> {
-  await delay(200);
-  return mockTrendChartData;
+  return apiCall(async () => {
+    await delay(200);
+    return ChartDataPointSchema.array().parse(mockTrendChartData);
+  });
 }
 
 export async function getEmissionSources(): Promise<EmissionSourceItem[]> {
-  await delay(250);
-  return mockEmissionSources;
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return apiCall(async () => {
+    await delay(250);
+    return EmissionSourceItemSchema.array().parse(mockEmissionSources);
+  });
 }

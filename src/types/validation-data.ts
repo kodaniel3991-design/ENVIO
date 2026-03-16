@@ -3,6 +3,9 @@
  * 추후 API 스키마와 맞춰 교체 가능
  */
 
+// MonthlyDataPoint는 types/index.ts에서 통합 관리
+export type { MonthlyDataPoint } from "@/types";
+
 /** 검증 상태 */
 export type ValidationStatus =
   | "submitted"
@@ -76,19 +79,11 @@ export interface ValidationWorkflowStep {
   description?: string;
 }
 
-/** 월별 데이터 포인트 */
-export interface MonthlyDataPoint {
-  month: number;
-  activityAmount: string | number;
-  emissions: string | number;
-  isAnomaly?: boolean;
-}
-
 /** 상세 드로어용 확장 데이터 */
 export interface ValidationDataDetail extends ValidationDataRow {
   year: number;
   month?: number;
-  monthlyData: MonthlyDataPoint[];
+  monthlyData: import("@/types").MonthlyDataPoint[];
   emissionFactor: {
     value: number;
     unit: string;

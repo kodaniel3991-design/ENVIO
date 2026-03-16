@@ -1,11 +1,11 @@
 import type { CarbonFlowNode } from "@/types";
 import { mockCarbonFlowRoot } from "@/lib/mock";
+import { delay, apiCall } from "@/lib/api";
+import { CarbonFlowNodeSchema } from "@/lib/schemas";
 
 export async function getCarbonFlowTree(): Promise<CarbonFlowNode> {
-  await delay(250);
-  return mockCarbonFlowRoot;
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return apiCall(async () => {
+    await delay(250);
+    return CarbonFlowNodeSchema.parse(mockCarbonFlowRoot) as CarbonFlowNode;
+  });
 }

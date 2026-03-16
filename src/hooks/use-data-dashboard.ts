@@ -9,6 +9,7 @@ import {
   getSubmissions,
 } from "@/services/api";
 import { queryKeys } from "@/lib/query-keys";
+import { useApiErrorMessage } from "@/hooks/use-api-error";
 
 export function useDataDashboard() {
   const envSummaryQuery = useQuery({
@@ -37,6 +38,16 @@ export function useDataDashboard() {
     socialSummaryQuery.isLoading ||
     govSummaryQuery.isLoading;
 
+  const esgError =
+    envSummaryQuery.error ??
+    socialSummaryQuery.error ??
+    govSummaryQuery.error ??
+    null;
+
+  const esgErrorMessage = useApiErrorMessage(esgError);
+  const scopeErrorMessage = useApiErrorMessage(scopeBreakdownQuery.error);
+  const submissionsErrorMessage = useApiErrorMessage(submissionsQuery.error);
+
   return {
     envSummaryQuery,
     socialSummaryQuery,
@@ -44,6 +55,9 @@ export function useDataDashboard() {
     scopeBreakdownQuery,
     submissionsQuery,
     esgLoading,
+    esgError,
+    esgErrorMessage,
+    scopeErrorMessage,
+    submissionsErrorMessage,
   };
 }
-

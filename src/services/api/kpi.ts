@@ -20,52 +20,78 @@ import {
   mockKpiChangeHistory,
   mockKpiSettings,
 } from "@/lib/mock";
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import { delay, apiCall } from "@/lib/api";
+import {
+  KpiManagementItemSchema,
+  KpiSummaryCardSchema,
+  KpiMasterItemSchema,
+  KpiTargetItemSchema,
+  KpiPerformanceItemSchema,
+  KpiCoverageItemSchema,
+  KpiCategoryItemSchema,
+  KpiChangeLogItemSchema,
+  KpiSettingsSchema,
+} from "@/lib/schemas";
 
 export async function getKpiList(): Promise<KpiManagementItem[]> {
-  await delay(250);
-  return mockKpiList;
+  return apiCall(async () => {
+    await delay(250);
+    return KpiManagementItemSchema.array().parse(mockKpiList);
+  });
 }
 
 export async function getKpiSummary(): Promise<KpiSummaryCard[]> {
-  await delay(150);
-  return mockKpiSummary;
+  return apiCall(async () => {
+    await delay(150);
+    return KpiSummaryCardSchema.array().parse(mockKpiSummary);
+  });
 }
 
 export async function getKpiMaster(): Promise<KpiMasterItem[]> {
-  await delay(200);
-  return mockKpiMaster;
+  return apiCall(async () => {
+    await delay(200);
+    return KpiMasterItemSchema.array().parse(mockKpiMaster);
+  });
 }
 
 export async function getKpiTargets(): Promise<KpiTargetItem[]> {
-  await delay(200);
-  return mockKpiTargets;
+  return apiCall(async () => {
+    await delay(200);
+    return KpiTargetItemSchema.array().parse(mockKpiTargets);
+  });
 }
 
 export async function getKpiPerformance(): Promise<KpiPerformanceItem[]> {
-  await delay(200);
-  return mockKpiPerformance;
+  return apiCall(async () => {
+    await delay(200);
+    return KpiPerformanceItemSchema.array().parse(mockKpiPerformance);
+  });
 }
 
 export async function getKpiCoverage(): Promise<KpiCoverageItem[]> {
-  await delay(150);
-  return mockKpiCoverage;
+  return apiCall(async () => {
+    await delay(150);
+    return KpiCoverageItemSchema.array().parse(mockKpiCoverage);
+  });
 }
 
 export async function getKpiCategories(): Promise<KpiCategoryItem[]> {
-  await delay(150);
-  return mockKpiCategories;
+  return apiCall(async () => {
+    await delay(150);
+    return KpiCategoryItemSchema.array().parse(mockKpiCategories);
+  });
 }
 
 export async function getKpiChangeHistory(): Promise<KpiChangeLogItem[]> {
-  await delay(200);
-  return mockKpiChangeHistory;
+  return apiCall(async () => {
+    await delay(200);
+    return KpiChangeLogItemSchema.array().parse(mockKpiChangeHistory);
+  });
 }
 
 export async function getKpiSettings(): Promise<KpiSettings> {
-  await delay(100);
-  return mockKpiSettings;
+  return apiCall(async () => {
+    await delay(100);
+    return KpiSettingsSchema.parse(mockKpiSettings);
+  });
 }

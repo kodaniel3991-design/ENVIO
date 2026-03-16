@@ -14,37 +14,56 @@ import {
   mockReductionProgressKpis,
   mockReductionScopeSummary,
 } from "@/lib/mock";
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import { delay, apiCall } from "@/lib/api";
+import {
+  ReductionScenarioSchema,
+  SimulatorResultSchema,
+  ReductionOpportunitySchema,
+  ReductionProjectSchema,
+  ReductionProgressKpiSchema,
+  ReductionScopeSummarySchema,
+} from "@/lib/schemas";
 
 export async function getReductionScenarios(): Promise<ReductionScenario[]> {
-  await delay(250);
-  return mockReductionScenarios;
+  return apiCall(async () => {
+    await delay(250);
+    return ReductionScenarioSchema.array().parse(mockReductionScenarios);
+  });
 }
 
-export async function runSimulation(_scenarioId: string): Promise<SimulatorResult> {
-  await delay(600);
-  return mockSimulatorResult;
+export async function runSimulation(
+  _scenarioId: string
+): Promise<SimulatorResult> {
+  return apiCall(async () => {
+    await delay(600);
+    return SimulatorResultSchema.parse(mockSimulatorResult);
+  });
 }
 
 export async function getReductionOpportunities(): Promise<ReductionOpportunity[]> {
-  await delay(200);
-  return mockReductionOpportunities;
+  return apiCall(async () => {
+    await delay(200);
+    return ReductionOpportunitySchema.array().parse(mockReductionOpportunities);
+  });
 }
 
 export async function getReductionProjects(): Promise<ReductionProject[]> {
-  await delay(200);
-  return mockReductionProjects;
+  return apiCall(async () => {
+    await delay(200);
+    return ReductionProjectSchema.array().parse(mockReductionProjects);
+  });
 }
 
 export async function getReductionProgressKpis(): Promise<ReductionProgressKpi[]> {
-  await delay(150);
-  return mockReductionProgressKpis;
+  return apiCall(async () => {
+    await delay(150);
+    return ReductionProgressKpiSchema.array().parse(mockReductionProgressKpis);
+  });
 }
 
 export async function getReductionScopeSummary(): Promise<ReductionScopeSummary[]> {
-  await delay(150);
-  return mockReductionScopeSummary;
+  return apiCall(async () => {
+    await delay(150);
+    return ReductionScopeSummarySchema.array().parse(mockReductionScopeSummary);
+  });
 }

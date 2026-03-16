@@ -9,7 +9,13 @@ import { EnvironmentFilters } from "@/components/environment-data/environment-fi
 import { EnvironmentDataTable } from "@/components/environment-data/environment-data-table";
 import { EnvironmentDetailDrawer } from "@/components/environment-data/environment-detail-drawer";
 import { DataQualityCards } from "@/components/environment-data/data-quality-cards";
-import { EnvironmentTrendCharts } from "@/components/environment-data/environment-trend-charts";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const EnvironmentTrendCharts = dynamic(
+  () => import("@/components/environment-data/environment-trend-charts").then((m) => ({ default: m.EnvironmentTrendCharts })),
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full rounded-lg" /> }
+);
 import { Scope3Breakdown } from "@/components/environment-data/scope3-breakdown";
 import {
   MOCK_ENV_KPI,

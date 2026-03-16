@@ -4,6 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { EsgMetricItem } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DATA_STATUS_LABEL,
+  DATA_STATUS_VARIANT,
+} from "@/lib/constants/status-badges";
+import { usePagination } from "@/hooks/use-pagination";
+import { PaginationBar } from "@/components/common/pagination-bar";
 
 interface EsgMetricsTableProps {
   data: EsgMetricItem[];
@@ -11,26 +17,14 @@ interface EsgMetricsTableProps {
   title?: string;
 }
 
-const statusLabel: Record<NonNullable<EsgMetricItem["status"]>, string> = {
-  verified: "검증됨",
-  estimated: "추정",
-  pending: "입력대기",
-};
-
-const statusVariant: Record<
-  NonNullable<EsgMetricItem["status"]>,
-  "success" | "warning" | "secondary"
-> = {
-  verified: "success",
-  estimated: "warning",
-  pending: "secondary",
-};
-
 export function EsgMetricsTable({
   data,
   isLoading,
   title = "지표 목록",
 }: EsgMetricsTableProps) {
+  const pagination = usePagination({ totalItems: data.length, pageSize: 10 });
+  const visible = pagination.paginate(data);
+
   if (isLoading) {
     return (
       <Card className="overflow-hidden">
@@ -54,7 +48,7 @@ export function EsgMetricsTable({
       </CardHeader>
       <CardContent className="p-4">
         <div className="overflow-x-auto rounded-md border border-border">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" aria-label={title}>
             <thead>
               <tr className="border-b border-border bg-muted/50 text-left text-muted-foreground">
                 <th className="px-4 py-3 font-medium">구분</th>
@@ -67,7 +61,7 @@ export function EsgMetricsTable({
               </tr>
             </thead>
             <tbody>
-              {data.map((row) => (
+              {visible.map((row) => (
                 <tr
                   key={row.id}
                   className="border-b border-border/50 transition-colors hover:bg-muted/30"
@@ -91,10 +85,10 @@ export function EsgMetricsTable({
                   <td className="px-4 py-3">
                     {row.status ? (
                       <Badge
-                        variant={statusVariant[row.status]}
+                        variant={DATA_STATUS_VARIANT[row.status]}
                         className="text-xs"
                       >
-                        {statusLabel[row.status]}
+                        {DATA_STATUS_LABEL[row.status]}
                       </Badge>
                     ) : (
                       "—"
@@ -105,6 +99,7 @@ export function EsgMetricsTable({
             </tbody>
           </table>
         </div>
+        <PaginationBar pagination={pagination} totalItems={data.length} />
       </CardContent>
     </Card>
   );
