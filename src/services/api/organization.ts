@@ -1,16 +1,12 @@
 import type { OrganizationSettings, WorksiteItem } from "@/types";
-import { mockOrganizationSettings } from "@/lib/mock/organization";
 import { saveWorksiteLocation } from "./commute-distance";
-import { delay, apiCall } from "@/lib/api";
-
-let orgStore: OrganizationSettings = JSON.parse(
-  JSON.stringify(mockOrganizationSettings)
-);
+import { apiCall } from "@/lib/api";
 
 export async function getOrganizationSettings(): Promise<OrganizationSettings> {
   return apiCall(async () => {
-    await delay(150);
-    return JSON.parse(JSON.stringify(orgStore));
+    const res = await fetch("/api/organization");
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
   });
 }
 
@@ -18,12 +14,16 @@ export async function saveOrganizationSettings(
   settings: OrganizationSettings
 ): Promise<OrganizationSettings> {
   return apiCall(async () => {
-    await delay(220);
-    orgStore = JSON.parse(JSON.stringify(settings));
+    const res = await fetch("/api/organization", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+    });
+    if (!res.ok) throw new Error(await res.text());
 
     // 기본 출근지는 출퇴근 거리 산출에서도 사용되므로 같이 갱신
-    const defaultWs = orgStore.defaultWorksiteId
-      ? orgStore.worksites.find((w) => w.id === orgStore.defaultWorksiteId)
+    const defaultWs = settings.defaultWorksiteId
+      ? settings.worksites.find((w) => w.id === settings.defaultWorksiteId)
       : undefined;
     if (defaultWs) {
       await saveWorksiteLocation({
@@ -33,7 +33,7 @@ export async function saveOrganizationSettings(
       });
     }
 
-    return JSON.parse(JSON.stringify(orgStore));
+    return settings;
   });
 }
 

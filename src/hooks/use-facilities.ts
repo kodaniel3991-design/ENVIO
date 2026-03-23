@@ -60,7 +60,7 @@ export function useSaveFacilities(scope: number, category: string) {
   return useMutation({
     mutationFn: (rows: DbFacilityRow[]) => saveFacilities(scope, category, rows),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["facilities", scope, category] });
+      queryClient.invalidateQueries({ queryKey: ["facilities", scope] });
     },
   });
 }

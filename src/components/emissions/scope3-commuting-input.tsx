@@ -40,9 +40,9 @@ export function Scope3CommutingInput({
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => String(currentYear - i));
   const queryClient = useQueryClient();
-  const { data: roster = [], isLoading: rosterLoading } = useQuery({
+  const { data: roster = [], isLoading: rosterLoading } = useQuery<EmployeeRosterItem[]>({
     queryKey: ["employee-roster"],
-    queryFn: getEmployeeRoster,
+    queryFn: () => getEmployeeRoster(),
   });
   const { data: savedData, isLoading: workDaysLoading } = useQuery({
     queryKey: ["commuting-work-days", year],

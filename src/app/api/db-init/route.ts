@@ -538,6 +538,84 @@ export async function POST() {
       `);
     }
 
+    // ──────────────────────────────────────────────
+    // 조직 테이블 (단일 조직)
+    // ──────────────────────────────────────────────
+    await pool.request().query(`
+      IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'organizations')
+      CREATE TABLE organizations (
+        id                INT            NOT NULL IDENTITY(1,1) PRIMARY KEY,
+        organization_name NVARCHAR(200)  NOT NULL DEFAULT '조직',
+        created_at        DATETIME2      NOT NULL DEFAULT GETDATE(),
+        updated_at        DATETIME2      NOT NULL DEFAULT GETDATE()
+      );
+    `);
+
+    // address, address_detail 컬럼 추가 (기존 테이블 대응 - idempotent)
+    await pool.request().query(`
+      IF NOT EXISTS (
+        SELECT * FROM sys.columns
+        WHERE object_id = OBJECT_ID('organizations') AND name = 'address'
+      )
+      ALTER TABLE organizations ADD address NVARCHAR(500) NOT NULL DEFAULT '';
+    `);
+    await pool.request().query(`
+      IF NOT EXISTS (
+        SELECT * FROM sys.columns
+        WHERE object_id = OBJECT_ID('organizations') AND name = 'address_detail'
+      )
+      ALTER TABLE organizations ADD address_detail NVARCHAR(200) NULL;
+    `);
+
+    // 기본 조직 행 삽입 (없는 경우)
+    await pool.request().query(`
+      IF NOT EXISTS (SELECT 1 FROM organizations)
+        INSERT INTO organizations (organization_name) VALUES ('조직');
+    `);
+
+    // ──────────────────────────────────────────────
+    // 사업장 테이블
+    // ──────────────────────────────────────────────
+    await pool.request().query(`
+      IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'worksites')
+      CREATE TABLE worksites (
+        id               NVARCHAR(50)   NOT NULL PRIMARY KEY,
+        organization_id  INT            NOT NULL
+                           REFERENCES organizations(id) ON DELETE CASCADE,
+        name             NVARCHAR(200)  NOT NULL,
+        address          NVARCHAR(500)  NOT NULL DEFAULT '',
+        address_detail   NVARCHAR(200)  NULL,
+        is_default       BIT            NOT NULL DEFAULT 0,
+        sort_order       INT            NOT NULL DEFAULT 0,
+        created_at       DATETIME2      NOT NULL DEFAULT GETDATE(),
+        updated_at       DATETIME2      NOT NULL DEFAULT GETDATE()
+      );
+    `);
+
+    // ──────────────────────────────────────────────
+    // 직원명부 테이블
+    // ──────────────────────────────────────────────
+    await pool.request().query(`
+      IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'employees')
+      CREATE TABLE employees (
+        id                    NVARCHAR(50)   NOT NULL PRIMARY KEY,
+        worksite_id           NVARCHAR(50)   NULL
+                                REFERENCES worksites(id) ON DELETE SET NULL,
+        department            NVARCHAR(100)  NULL,
+        name                  NVARCHAR(100)  NOT NULL,
+        job_title             NVARCHAR(100)  NULL,
+        employee_id           NVARCHAR(50)   NULL,
+        commute_transport     NVARCHAR(50)   NULL,
+        fuel                  NVARCHAR(50)   NULL,
+        address               NVARCHAR(500)  NULL,
+        address_detail        NVARCHAR(200)  NULL,
+        commute_distance_km   DECIMAL(10,3)  NULL,
+        sort_order            INT            NOT NULL DEFAULT 0,
+        created_at            DATETIME2      NOT NULL DEFAULT GETDATE(),
+        updated_at            DATETIME2      NOT NULL DEFAULT GETDATE()
+      );
+    `);
+
     // 기존 마이그레이션 (이전 테이블)
     await pool.request().query(`
       IF EXISTS (SELECT * FROM sys.tables WHERE name = 'facilities')
@@ -571,6 +649,9 @@ export async function POST() {
         "emission_references",
         "emission_factor_source",
         "emission_factor_master",
+        "organizations",
+        "worksites",
+        "employees",
       ],
     });
   } catch (err: any) {

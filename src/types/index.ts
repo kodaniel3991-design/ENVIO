@@ -75,9 +75,7 @@ export interface EmissionSourceItem {
 /** 출퇴근 교통수단 옵션 */
 export type CommuteTransportType =
   | "public"      // 대중교통
-  | "car_gasoline"// 자가용(휘발유)
-  | "car_diesel"  // 자가용(경유)
-  | "car_lpg"     // 자가용(LPG)
+  | "car"         // 자가용 (연료는 fuel 필드에서 별도 관리)
   | "ev"          // 전기·수소
   | "walk_bike";  // 도보·자전거
 
@@ -95,6 +93,8 @@ export interface WorksiteItem extends WorksiteLocation {
 
 export interface OrganizationSettings {
   organizationName: string;
+  organizationAddress?: string;
+  organizationAddressDetail?: string;
   worksites: WorksiteItem[];
   defaultWorksiteId?: string;
 }
@@ -111,12 +111,12 @@ export interface DistanceApiSettings {
 /** 직원 출퇴근: 설정에서 등록하는 직원명부 항목 */
 export interface EmployeeRosterItem {
   id: string;
+  /** 소속 사업장 ID */
+  worksiteId?: string;
   /** 부서 */
   department?: string;
   /** 이름 */
   name: string;
-  /** 직책 */
-  jobTitle?: string;
   /** 사원번호 */
   employeeId?: string;
   /** 출퇴근 교통수단 */
@@ -129,6 +129,10 @@ export interface EmployeeRosterItem {
   addressDetail?: string;
   /** 주소 ↔ 사업장(출근지) 거리 (km) */
   commuteDistanceKm?: number;
+  /** 등록일자 */
+  createdAt?: string;
+  /** 변경일자 */
+  updatedAt?: string;
 }
 
 // ========== 사용자 및 권한 ==========

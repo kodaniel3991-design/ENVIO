@@ -87,6 +87,8 @@ export async function POST(req: NextRequest) {
       await req2.query(`
         IF EXISTS (SELECT 1 FROM emission_facilities WHERE id = @id)
           UPDATE emission_facilities SET
+            scope         = @scope,
+            category_id   = @category_id,
             facility_name = @facility_name,
             fuel_type     = @fuel_type,
             energy_type   = @energy_type,

@@ -1,32 +1,42 @@
 import type { EmployeeRosterItem, CommutingWorkDaysByYear } from "@/types";
-import { mockEmployeeRoster } from "@/lib/mock/employee-roster";
-import { delay, apiCall } from "@/lib/api";
+import { apiCall } from "@/lib/api";
 
-let rosterStore: EmployeeRosterItem[] = [...mockEmployeeRoster];
-const commutingStore: Record<string, CommutingWorkDaysByYear> = {};
+// ── 직원명부 ──────────────────────────────────────────────────
 
-export async function getEmployeeRoster(): Promise<EmployeeRosterItem[]> {
+export async function getEmployeeRoster(worksiteId?: string | null): Promise<EmployeeRosterItem[]> {
   return apiCall(async () => {
-    await delay(150);
-    return [...rosterStore];
+    const url = worksiteId
+      ? `/api/employees?worksiteId=${encodeURIComponent(worksiteId)}`
+      : `/api/employees`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
   });
 }
 
 export async function saveEmployeeRoster(
-  items: EmployeeRosterItem[]
+  items: EmployeeRosterItem[],
+  worksiteId: string | null
 ): Promise<EmployeeRosterItem[]> {
   return apiCall(async () => {
-    await delay(200);
-    rosterStore = items.map((item) => ({ ...item }));
-    return [...rosterStore];
+    const res = await fetch("/api/employees", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ worksiteId, employees: items }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return items;
   });
 }
+
+// ── 근무일수 (기존 로컬 스토어 유지) ──────────────────────────
+
+const commutingStore: Record<string, CommutingWorkDaysByYear> = {};
 
 export async function getCommutingWorkDays(
   year: string
 ): Promise<CommutingWorkDaysByYear> {
   return apiCall(async () => {
-    await delay(120);
     const existing = commutingStore[year];
     if (existing) return { ...existing, workDays: { ...existing.workDays } };
     return { year, workDays: {} };
@@ -37,7 +47,6 @@ export async function saveCommutingWorkDays(
   data: CommutingWorkDaysByYear
 ): Promise<void> {
   return apiCall(async () => {
-    await delay(180);
     commutingStore[data.year] = {
       year: data.year,
       workDays: JSON.parse(JSON.stringify(data.workDays)),
