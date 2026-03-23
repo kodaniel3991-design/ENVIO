@@ -1,86 +1,48 @@
-import type {
-  MaterialityIssue,
-  MaterialityAiRecommendation,
-  MaterialityMatrixPoint,
-  MaterialityIssueRanking,
-  MaterialityReportLink,
-  MaterialityVersionHistory,
-  MaterialitySettings,
-} from "@/types";
-import {
-  mockMaterialityIssues,
-  mockMaterialityAiRecommendations,
-  mockMaterialityMatrix,
-  mockMaterialityRanking,
-  mockMaterialityReportLinks,
-  mockMaterialityVersionHistory,
-  mockMaterialitySettings,
-} from "@/lib/mock";
-import { delay, apiCall } from "@/lib/api";
-import {
-  MaterialityIssueSchema,
-  MaterialityAiRecommendationSchema,
-  MaterialityMatrixPointSchema,
-  MaterialityIssueRankingSchema,
-  MaterialityReportLinkSchema,
-  MaterialityVersionHistorySchema,
-  MaterialitySettingsSchema,
-} from "@/lib/schemas";
+import { apiCall } from "@/lib/api";
+import type { MaterialityVersionHistory } from "@/types";
 
-export async function getMaterialityIssues(): Promise<MaterialityIssue[]> {
-  return apiCall(async () => {
-    await delay(200);
-    return MaterialityIssueSchema.array().parse(mockMaterialityIssues);
-  });
+async function fetchMateriality(type: string) {
+  const res = await fetch(`/api/materiality?type=${type}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
-export async function getMaterialityAiRecommendations(): Promise<MaterialityAiRecommendation[]> {
-  return apiCall(async () => {
-    await delay(150);
-    return MaterialityAiRecommendationSchema.array().parse(
-      mockMaterialityAiRecommendations
-    );
-  });
+export async function getMaterialityIssues() {
+  return apiCall(() => fetchMateriality("issues"));
 }
 
-export async function getMaterialityMatrix(): Promise<MaterialityMatrixPoint[]> {
-  return apiCall(async () => {
-    await delay(150);
-    return MaterialityMatrixPointSchema.array().parse(mockMaterialityMatrix);
-  });
-}
-
-export async function getMaterialityRanking(): Promise<MaterialityIssueRanking[]> {
-  return apiCall(async () => {
-    await delay(150);
-    return MaterialityIssueRankingSchema.array().parse(mockMaterialityRanking);
-  });
-}
-
-export async function getMaterialityReportLinks(
-  issueId?: string
-): Promise<MaterialityReportLink[]> {
-  return apiCall(async () => {
-    await delay(100);
-    const data = issueId
-      ? mockMaterialityReportLinks.filter((r) => r.issueId === issueId)
-      : mockMaterialityReportLinks;
-    return MaterialityReportLinkSchema.array().parse(data);
-  });
+export async function getMaterialityMatrix() {
+  return apiCall(() => fetchMateriality("matrix"));
 }
 
 export async function getMaterialityVersionHistory(): Promise<MaterialityVersionHistory[]> {
-  return apiCall(async () => {
-    await delay(150);
-    return MaterialityVersionHistorySchema.array().parse(
-      mockMaterialityVersionHistory
-    );
-  });
+  return apiCall(() => fetchMateriality("version-history"));
 }
 
-export async function getMaterialitySettings(): Promise<MaterialitySettings> {
+export async function getMaterialityAiRecommendations() {
+  return apiCall(() => fetchMateriality("ai-recommendations"));
+}
+
+export async function getMaterialityRanking() {
+  return apiCall(() => fetchMateriality("ranking"));
+}
+
+export async function getMaterialityReportLinks(issueId?: string) {
+  const type = issueId ? `report-links&issueId=${issueId}` : "report-links";
+  return apiCall(() => fetchMateriality(type));
+}
+
+export async function getMaterialitySettings() {
+  return apiCall(() => fetchMateriality("settings"));
+}
+
+export async function saveMaterialityIssues(items: any[]): Promise<void> {
   return apiCall(async () => {
-    await delay(100);
-    return MaterialitySettingsSchema.parse(mockMaterialitySettings);
+    const res = await fetch("/api/materiality", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+    if (!res.ok) throw new Error(await res.text());
   });
 }

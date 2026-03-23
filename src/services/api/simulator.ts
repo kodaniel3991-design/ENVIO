@@ -1,69 +1,65 @@
-import type {
-  ReductionScenario,
-  SimulatorResult,
-  ReductionOpportunity,
-  ReductionProject,
-  ReductionProgressKpi,
-  ReductionScopeSummary,
-} from "@/types";
-import {
-  mockReductionScenarios,
-  mockSimulatorResult,
-  mockReductionOpportunities,
-  mockReductionProjects,
-  mockReductionProgressKpis,
-  mockReductionScopeSummary,
-} from "@/lib/mock";
-import { delay, apiCall } from "@/lib/api";
-import {
-  ReductionScenarioSchema,
-  SimulatorResultSchema,
-  ReductionOpportunitySchema,
-  ReductionProjectSchema,
-  ReductionProgressKpiSchema,
-  ReductionScopeSummarySchema,
-} from "@/lib/schemas";
+import { apiCall } from "@/lib/api";
 
-export async function getReductionScenarios(): Promise<ReductionScenario[]> {
+async function fetchReduction(type: string) {
+  const res = await fetch(`/api/reduction?type=${type}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function getReductionProjects() {
+  return apiCall(() => fetchReduction("projects"));
+}
+
+export async function getReductionSummary() {
+  return apiCall(() => fetchReduction("summary"));
+}
+
+export async function getReductionScenarios() {
+  return apiCall(() => fetchReduction("scenarios"));
+}
+
+export async function runSimulation(scenarioId: string) {
   return apiCall(async () => {
-    await delay(250);
-    return ReductionScenarioSchema.array().parse(mockReductionScenarios);
+    const res = await fetch("/api/reduction", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "simulate", scenarioId }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
   });
 }
 
-export async function runSimulation(
-  _scenarioId: string
-): Promise<SimulatorResult> {
+export async function getReductionOpportunities() {
+  return apiCall(() => fetchReduction("opportunities"));
+}
+
+export async function getReductionProgressKpis() {
+  return apiCall(() => fetchReduction("progress-kpis"));
+}
+
+export async function getReductionScopeSummary() {
+  return apiCall(() => fetchReduction("scope-summary"));
+}
+
+export async function saveReductionProject(item: any): Promise<void> {
   return apiCall(async () => {
-    await delay(600);
-    return SimulatorResultSchema.parse(mockSimulatorResult);
+    const res = await fetch("/api/reduction", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "save", item }),
+    });
+    if (!res.ok) throw new Error(await res.text());
   });
 }
 
-export async function getReductionOpportunities(): Promise<ReductionOpportunity[]> {
+export async function deleteReductionProject(id: string): Promise<void> {
   return apiCall(async () => {
-    await delay(200);
-    return ReductionOpportunitySchema.array().parse(mockReductionOpportunities);
-  });
-}
-
-export async function getReductionProjects(): Promise<ReductionProject[]> {
-  return apiCall(async () => {
-    await delay(200);
-    return ReductionProjectSchema.array().parse(mockReductionProjects);
-  });
-}
-
-export async function getReductionProgressKpis(): Promise<ReductionProgressKpi[]> {
-  return apiCall(async () => {
-    await delay(150);
-    return ReductionProgressKpiSchema.array().parse(mockReductionProgressKpis);
-  });
-}
-
-export async function getReductionScopeSummary(): Promise<ReductionScopeSummary[]> {
-  return apiCall(async () => {
-    await delay(150);
-    return ReductionScopeSummarySchema.array().parse(mockReductionScopeSummary);
+    const res = await fetch("/api/reduction", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete", id }),
+    });
+    if (!res.ok) throw new Error(await res.text());
   });
 }

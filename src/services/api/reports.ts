@@ -1,69 +1,57 @@
-import type {
-  ESGReport,
-  ReportTemplate,
-  ReportGenerationReadiness,
-  ReportGenerationHistoryItem,
-  DisclosureFrameworkItem,
-  MappingEngineItem,
-} from "@/types";
-import {
-  mockESGReports,
-  mockReportTemplates,
-  mockReportReadiness,
-  mockReportHistory,
-  mockDisclosureFrameworkItems,
-  mockMappingItems,
-} from "@/lib/mock";
-import { delay, apiCall } from "@/lib/api";
-import {
-  ESGReportSchema,
-  ReportTemplateSchema,
-  ReportGenerationReadinessSchema,
-  ReportGenerationHistoryItemSchema,
-  DisclosureFrameworkItemSchema,
-  MappingEngineItemSchema,
-} from "@/lib/schemas";
+import { apiCall } from "@/lib/api";
 
-export async function getESGReports(): Promise<ESGReport[]> {
+async function fetchReports(type: string) {
+  const res = await fetch(`/api/reports?type=${type}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function getESGReports() {
+  return apiCall(() => fetchReports("list"));
+}
+
+export async function getComplianceStatus() {
+  return apiCall(() => fetchReports("compliance"));
+}
+
+export async function getMappingItems() {
+  return apiCall(() => fetchReports("mappings"));
+}
+
+export async function getReportTemplates() {
+  return apiCall(() => fetchReports("templates"));
+}
+
+export async function getReportReadiness() {
+  return apiCall(() => fetchReports("readiness"));
+}
+
+export async function getReportHistory() {
+  return apiCall(() => fetchReports("history"));
+}
+
+export async function getDisclosureFrameworkItems() {
+  return apiCall(() => fetchReports("disclosure-framework"));
+}
+
+export async function saveReport(item: any): Promise<void> {
   return apiCall(async () => {
-    await delay(250);
-    return ESGReportSchema.array().parse(mockESGReports);
+    const res = await fetch("/api/reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "save-report", item }),
+    });
+    if (!res.ok) throw new Error(await res.text());
   });
 }
 
-export async function getReportTemplates(): Promise<ReportTemplate[]> {
+export async function saveComplianceItems(items: any[]): Promise<void> {
   return apiCall(async () => {
-    await delay(200);
-    return ReportTemplateSchema.array().parse(mockReportTemplates);
-  });
-}
-
-export async function getReportReadiness(): Promise<ReportGenerationReadiness[]> {
-  return apiCall(async () => {
-    await delay(150);
-    return ReportGenerationReadinessSchema.array().parse(mockReportReadiness);
-  });
-}
-
-export async function getReportHistory(): Promise<ReportGenerationHistoryItem[]> {
-  return apiCall(async () => {
-    await delay(150);
-    return ReportGenerationHistoryItemSchema.array().parse(mockReportHistory);
-  });
-}
-
-export async function getDisclosureFrameworkItems(): Promise<DisclosureFrameworkItem[]> {
-  return apiCall(async () => {
-    await delay(200);
-    return DisclosureFrameworkItemSchema.array().parse(
-      mockDisclosureFrameworkItems
-    );
-  });
-}
-
-export async function getMappingItems(): Promise<MappingEngineItem[]> {
-  return apiCall(async () => {
-    await delay(200);
-    return MappingEngineItemSchema.array().parse(mockMappingItems);
+    const res = await fetch("/api/reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "save-compliance", items }),
+    });
+    if (!res.ok) throw new Error(await res.text());
   });
 }

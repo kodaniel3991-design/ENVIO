@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { UserItem, UserStatus } from "@/types";
+import type { UserItem, UserStatus, RoleItem } from "@/types";
 import {
   deleteUser,
   getRoles,
@@ -29,11 +29,11 @@ function trimOptional(s: string | undefined): string | undefined {
 
 export default function SettingsUsersPage() {
   const queryClient = useQueryClient();
-  const { data: users = [], isLoading: usersLoading } = useQuery({
+  const { data: users = [], isLoading: usersLoading } = useQuery<UserItem[]>({
     queryKey: ["settings-users"],
     queryFn: getUsers,
   });
-  const { data: roles = [], isLoading: rolesLoading } = useQuery({
+  const { data: roles = [], isLoading: rolesLoading } = useQuery<RoleItem[]>({
     queryKey: ["settings-roles"],
     queryFn: getRoles,
   });

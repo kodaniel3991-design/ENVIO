@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function KpiPerformancePage() {
-  const { data: list, isLoading } = useQuery({ queryKey: ["kpi-performance"], queryFn: getKpiPerformance });
+  const { data: list, isLoading } = useQuery({ queryKey: ["kpi-performance"], queryFn: () => getKpiPerformance() });
   return (
     <>
       <PageHeader title="KPI 실적관리" description="기간별 KPI 실적을 입력하고 관리합니다.">

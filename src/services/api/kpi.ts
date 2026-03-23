@@ -1,97 +1,99 @@
 import type {
-  KpiManagementItem,
-  KpiSummaryCard,
   KpiMasterItem,
   KpiTargetItem,
   KpiPerformanceItem,
-  KpiCoverageItem,
-  KpiCategoryItem,
   KpiChangeLogItem,
+  KpiManagementItem,
+  KpiSummaryCard,
+  KpiCategoryItem,
+  KpiCoverageItem,
   KpiSettings,
 } from "@/types";
-import {
-  mockKpiList,
-  mockKpiSummary,
-  mockKpiMaster,
-  mockKpiTargets,
-  mockKpiPerformance,
-  mockKpiCoverage,
-  mockKpiCategories,
-  mockKpiChangeHistory,
-  mockKpiSettings,
-} from "@/lib/mock";
-import { delay, apiCall } from "@/lib/api";
-import {
-  KpiManagementItemSchema,
-  KpiSummaryCardSchema,
-  KpiMasterItemSchema,
-  KpiTargetItemSchema,
-  KpiPerformanceItemSchema,
-  KpiCoverageItemSchema,
-  KpiCategoryItemSchema,
-  KpiChangeLogItemSchema,
-  KpiSettingsSchema,
-} from "@/lib/schemas";
+import { apiCall } from "@/lib/api";
 
-export async function getKpiList(): Promise<KpiManagementItem[]> {
-  return apiCall(async () => {
-    await delay(250);
-    return KpiManagementItemSchema.array().parse(mockKpiList);
-  });
-}
-
-export async function getKpiSummary(): Promise<KpiSummaryCard[]> {
-  return apiCall(async () => {
-    await delay(150);
-    return KpiSummaryCardSchema.array().parse(mockKpiSummary);
-  });
+async function fetchKpi(type: string, params?: Record<string, string>) {
+  const sp = new URLSearchParams({ type, ...params });
+  const res = await fetch(`/api/kpi?${sp}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
 export async function getKpiMaster(): Promise<KpiMasterItem[]> {
-  return apiCall(async () => {
-    await delay(200);
-    return KpiMasterItemSchema.array().parse(mockKpiMaster);
-  });
+  return apiCall(() => fetchKpi("master"));
 }
 
-export async function getKpiTargets(): Promise<KpiTargetItem[]> {
-  return apiCall(async () => {
-    await delay(200);
-    return KpiTargetItemSchema.array().parse(mockKpiTargets);
-  });
+export async function getKpiTargets(period?: string): Promise<KpiTargetItem[]> {
+  return apiCall(() => fetchKpi("targets", period ? { period } : undefined));
 }
 
-export async function getKpiPerformance(): Promise<KpiPerformanceItem[]> {
-  return apiCall(async () => {
-    await delay(200);
-    return KpiPerformanceItemSchema.array().parse(mockKpiPerformance);
-  });
-}
-
-export async function getKpiCoverage(): Promise<KpiCoverageItem[]> {
-  return apiCall(async () => {
-    await delay(150);
-    return KpiCoverageItemSchema.array().parse(mockKpiCoverage);
-  });
-}
-
-export async function getKpiCategories(): Promise<KpiCategoryItem[]> {
-  return apiCall(async () => {
-    await delay(150);
-    return KpiCategoryItemSchema.array().parse(mockKpiCategories);
-  });
+export async function getKpiPerformance(period?: string): Promise<KpiPerformanceItem[]> {
+  return apiCall(() => fetchKpi("performance", period ? { period } : undefined));
 }
 
 export async function getKpiChangeHistory(): Promise<KpiChangeLogItem[]> {
+  return apiCall(() => fetchKpi("change-log"));
+}
+
+export async function saveKpiMaster(items: KpiMasterItem[]): Promise<void> {
   return apiCall(async () => {
-    await delay(200);
-    return KpiChangeLogItemSchema.array().parse(mockKpiChangeHistory);
+    const res = await fetch("/api/kpi", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "save-master", items }),
+    });
+    if (!res.ok) throw new Error(await res.text());
   });
 }
 
-export async function getKpiSettings(): Promise<KpiSettings> {
+export async function saveKpiTargets(items: KpiTargetItem[]): Promise<void> {
   return apiCall(async () => {
-    await delay(100);
-    return KpiSettingsSchema.parse(mockKpiSettings);
+    const res = await fetch("/api/kpi", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "save-targets", items }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+  });
+}
+
+export async function saveKpiPerformance(items: KpiPerformanceItem[]): Promise<void> {
+  return apiCall(async () => {
+    const res = await fetch("/api/kpi", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "save-performance", items }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+  });
+}
+
+export async function getKpiList(): Promise<KpiManagementItem[]> {
+  return apiCall(() => fetchKpi("list"));
+}
+
+export async function getKpiSummary(): Promise<KpiSummaryCard[]> {
+  return apiCall(() => fetchKpi("summary"));
+}
+
+export async function getKpiCategories(): Promise<KpiCategoryItem[]> {
+  return apiCall(() => fetchKpi("categories"));
+}
+
+export async function getKpiCoverage(): Promise<KpiCoverageItem[]> {
+  return apiCall(() => fetchKpi("coverage"));
+}
+
+export async function getKpiSettings(): Promise<KpiSettings> {
+  return apiCall(() => fetchKpi("settings"));
+}
+
+export async function deleteKpiMaster(id: string): Promise<void> {
+  return apiCall(async () => {
+    const res = await fetch("/api/kpi", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete-master", id }),
+    });
+    if (!res.ok) throw new Error(await res.text());
   });
 }

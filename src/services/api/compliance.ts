@@ -1,11 +1,3 @@
-import type { ComplianceItem } from "@/types";
-import { mockComplianceItems } from "@/lib/mock";
-import { delay, apiCall } from "@/lib/api";
-import { ComplianceItemSchema } from "@/lib/schemas";
-
-export async function getComplianceStatus(): Promise<ComplianceItem[]> {
-  return apiCall(async () => {
-    await delay(280);
-    return ComplianceItemSchema.array().parse(mockComplianceItems);
-  });
-}
+// 컴플라이언스 API는 reports.ts의 getComplianceStatus()로 통합됨
+// 이 파일은 하위호환성을 위해 re-export
+export { getComplianceStatus } from "./reports";

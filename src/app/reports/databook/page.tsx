@@ -14,15 +14,15 @@ import type { EsgDomain } from "@/types";
 export default function ESGDatabookPage() {
   const { data: env, isLoading: envLoading } = useQuery({
     queryKey: ["esg-env-metrics"],
-    queryFn: getEnvironmentMetrics,
+    queryFn: () => getEnvironmentMetrics(),
   });
   const { data: soc, isLoading: socLoading } = useQuery({
     queryKey: ["esg-soc-metrics"],
-    queryFn: getSocialMetrics,
+    queryFn: () => getSocialMetrics(),
   });
   const { data: gov, isLoading: govLoading } = useQuery({
     queryKey: ["esg-gov-metrics"],
-    queryFn: getGovernanceMetrics,
+    queryFn: () => getGovernanceMetrics(),
   });
   const domains: EsgDomain[] = ["environment", "social", "governance"];
 

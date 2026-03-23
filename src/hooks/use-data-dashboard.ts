@@ -26,7 +26,7 @@ export function useDataDashboard() {
   });
   const scopeBreakdownQuery = useQuery({
     queryKey: queryKeys.data.scopeBreakdown,
-    queryFn: getScopeBreakdown,
+    queryFn: () => getScopeBreakdown(),
   });
   const submissionsQuery = useQuery({
     queryKey: queryKeys.data.submissions,

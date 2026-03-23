@@ -1,53 +1,65 @@
-import type { EsgMetricItem, EsgSummaryCard } from "@/types";
-import {
-  mockEnvironmentMetrics,
-  mockEnvironmentSummary,
-  mockSocialMetrics,
-  mockSocialSummary,
-  mockGovernanceMetrics,
-  mockGovernanceSummary,
-} from "@/lib/mock/esg";
-import { delay, apiCall } from "@/lib/api";
-import { EsgMetricItemSchema, EsgSummaryCardSchema } from "@/lib/schemas";
+import type { EsgMetricItem } from "@/types";
+import { apiCall } from "@/lib/api";
 
-export async function getEnvironmentMetrics(): Promise<EsgMetricItem[]> {
-  return apiCall(async () => {
-    await delay(280);
-    return EsgMetricItemSchema.array().parse(mockEnvironmentMetrics);
-  });
+async function fetchEsg(domain: string, period?: string): Promise<EsgMetricItem[]> {
+  const sp = new URLSearchParams({ domain });
+  if (period) sp.set("period", period);
+  const res = await fetch(`/api/esg?${sp}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
-export async function getEnvironmentSummary(): Promise<EsgSummaryCard[]> {
-  return apiCall(async () => {
-    await delay(150);
-    return EsgSummaryCardSchema.array().parse(mockEnvironmentSummary);
-  });
+export async function getEnvironmentMetrics(period?: string): Promise<EsgMetricItem[]> {
+  return apiCall(() => fetchEsg("environment", period));
 }
 
-export async function getSocialMetrics(): Promise<EsgMetricItem[]> {
-  return apiCall(async () => {
-    await delay(280);
-    return EsgMetricItemSchema.array().parse(mockSocialMetrics);
-  });
+export async function getSocialMetrics(period?: string): Promise<EsgMetricItem[]> {
+  return apiCall(() => fetchEsg("social", period));
 }
 
-export async function getSocialSummary(): Promise<EsgSummaryCard[]> {
-  return apiCall(async () => {
-    await delay(150);
-    return EsgSummaryCardSchema.array().parse(mockSocialSummary);
-  });
+export async function getGovernanceMetrics(period?: string): Promise<EsgMetricItem[]> {
+  return apiCall(() => fetchEsg("governance", period));
 }
 
-export async function getGovernanceMetrics(): Promise<EsgMetricItem[]> {
-  return apiCall(async () => {
-    await delay(280);
-    return EsgMetricItemSchema.array().parse(mockGovernanceMetrics);
-  });
+export async function getEnvironmentSummary() {
+  const metrics = await getEnvironmentMetrics();
+  return deriveSummary(metrics, "환경");
 }
 
-export async function getGovernanceSummary(): Promise<EsgSummaryCard[]> {
+export async function getSocialSummary() {
+  const metrics = await getSocialMetrics();
+  return deriveSummary(metrics, "사회");
+}
+
+export async function getGovernanceSummary() {
+  const metrics = await getGovernanceMetrics();
+  return deriveSummary(metrics, "거버넌스");
+}
+
+function deriveSummary(
+  metrics: EsgMetricItem[],
+  domainLabel: string
+): { label: string; value: string | number; unit?: string }[] {
+  if (!metrics.length) {
+    return [{ label: `${domainLabel} 지표`, value: 0, unit: "건" }];
+  }
+  const total = metrics.length;
+  const verified = metrics.filter((m) => m.status === "verified").length;
+  const pending = metrics.filter((m) => m.status === "pending").length;
+  return [
+    { label: "총 지표", value: total, unit: "건" },
+    { label: "검증 완료", value: verified, unit: "건" },
+    { label: "대기중", value: pending, unit: "건" },
+  ];
+}
+
+export async function saveEsgMetrics(items: EsgMetricItem[]): Promise<void> {
   return apiCall(async () => {
-    await delay(150);
-    return EsgSummaryCardSchema.array().parse(mockGovernanceSummary);
+    const res = await fetch("/api/esg", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+    if (!res.ok) throw new Error(await res.text());
   });
 }

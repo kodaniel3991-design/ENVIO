@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function KpiTargetsPage() {
-  const { data: list, isLoading } = useQuery({ queryKey: ["kpi-targets"], queryFn: getKpiTargets });
+  const { data: list, isLoading } = useQuery({ queryKey: ["kpi-targets"], queryFn: () => getKpiTargets() });
   return (
     <>
       <PageHeader title="KPI 목표관리" description="기간별 KPI 목표를 설정하고 관리합니다.">

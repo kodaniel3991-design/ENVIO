@@ -1,57 +1,25 @@
 import type {
   EmissionSummary,
-  EmissionTrend,
-  ScopeBreakdown,
-  ChartDataPoint,
   EmissionSourceItem,
 } from "@/types";
-import {
-  mockEmissionSummary,
-  mockEmissionTrends,
-  mockScopeBreakdown,
-  mockTrendChartData,
-  mockEmissionSources,
-} from "@/lib/mock";
-import { delay, apiCall } from "@/lib/api";
-import {
-  EmissionSummarySchema,
-  EmissionTrendSchema,
-  ScopeBreakdownSchema,
-  ChartDataPointSchema,
-  EmissionSourceItemSchema,
-} from "@/lib/schemas";
+import { apiCall } from "@/lib/api";
 
-export async function getEmissionSummary(): Promise<EmissionSummary> {
-  return apiCall(async () => {
-    await delay(300);
-    return EmissionSummarySchema.parse(mockEmissionSummary);
-  });
+async function fetchEmissions(type: string, year?: string) {
+  const sp = new URLSearchParams({ type });
+  if (year) sp.set("year", year);
+  const res = await fetch(`/api/emissions?${sp}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
-export async function getEmissionTrends(): Promise<EmissionTrend[]> {
-  return apiCall(async () => {
-    await delay(300);
-    return EmissionTrendSchema.array().parse(mockEmissionTrends);
-  });
+export async function getEmissionSummary(year?: string): Promise<EmissionSummary> {
+  return apiCall(() => fetchEmissions("summary", year));
 }
 
-export async function getScopeBreakdown(): Promise<ScopeBreakdown[]> {
-  return apiCall(async () => {
-    await delay(200);
-    return ScopeBreakdownSchema.array().parse(mockScopeBreakdown);
-  });
+export async function getEmissionSources(year?: string): Promise<EmissionSourceItem[]> {
+  return apiCall(() => fetchEmissions("sources", year));
 }
 
-export async function getTrendChartData(): Promise<ChartDataPoint[]> {
-  return apiCall(async () => {
-    await delay(200);
-    return ChartDataPointSchema.array().parse(mockTrendChartData);
-  });
-}
-
-export async function getEmissionSources(): Promise<EmissionSourceItem[]> {
-  return apiCall(async () => {
-    await delay(250);
-    return EmissionSourceItemSchema.array().parse(mockEmissionSources);
-  });
+export async function getEmissionTrends(year?: string): Promise<any[]> {
+  return apiCall(() => fetchEmissions("trends", year));
 }

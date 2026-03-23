@@ -1,96 +1,73 @@
-import type { RoleItem, UserItem, UserStatus } from "@/types";
-import { mockRoles, mockUsers } from "@/lib/mock/users";
-import { delay, apiCall } from "@/lib/api";
+import { apiCall } from "@/lib/api";
 
-let rolesStore: RoleItem[] = JSON.parse(JSON.stringify(mockRoles));
-let usersStore: UserItem[] = JSON.parse(JSON.stringify(mockUsers));
-
-function nowYmd(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+async function fetchUsers(type: string) {
+  const res = await fetch(`/api/users?type=${type}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
-export async function getRoles(): Promise<RoleItem[]> {
+export async function getUsers() {
+  return apiCall(() => fetchUsers("users"));
+}
+
+export async function getRoles() {
+  return apiCall(() => fetchUsers("roles"));
+}
+
+export async function saveUser(item: any): Promise<void> {
   return apiCall(async () => {
-    await delay(120);
-    return JSON.parse(JSON.stringify(rolesStore));
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "save-user", item }),
+    });
+    if (!res.ok) throw new Error(await res.text());
   });
 }
 
-export async function saveRoles(items: RoleItem[]): Promise<RoleItem[]> {
+export async function saveRole(item: any): Promise<void> {
   return apiCall(async () => {
-    await delay(180);
-    rolesStore = JSON.parse(JSON.stringify(items));
-    return JSON.parse(JSON.stringify(rolesStore));
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "save-role", item }),
+    });
+    if (!res.ok) throw new Error(await res.text());
   });
 }
 
-export async function getUsers(): Promise<UserItem[]> {
+export async function saveRoles(items: any[]): Promise<void> {
+  for (const item of items) {
+    await saveRole(item);
+  }
+}
+
+export async function upsertUser(item: any): Promise<void> {
+  return saveUser(item);
+}
+
+export async function inviteUser(item: any): Promise<void> {
+  return saveUser({ ...item, status: "invited" });
+}
+
+export async function setUserStatus(params: { userId: string; status: string }): Promise<void> {
   return apiCall(async () => {
-    await delay(150);
-    return JSON.parse(JSON.stringify(usersStore));
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "save-user", item: { id: params.userId, status: params.status } }),
+    });
+    if (!res.ok) throw new Error(await res.text());
   });
 }
 
-export async function upsertUser(user: UserItem): Promise<UserItem> {
+export async function deleteUser(id: string): Promise<void> {
   return apiCall(async () => {
-    await delay(180);
-    const existingIdx = usersStore.findIndex((u) => u.id === user.id);
-    if (existingIdx >= 0) {
-      usersStore[existingIdx] = { ...usersStore[existingIdx], ...user };
-      return JSON.parse(JSON.stringify(usersStore[existingIdx]));
-    }
-    const created: UserItem = {
-      ...user,
-      createdAt: user.createdAt ?? nowYmd(),
-    };
-    usersStore = [created, ...usersStore];
-    return JSON.parse(JSON.stringify(created));
-  });
-}
-
-export async function inviteUser(args: {
-  name: string;
-  email: string;
-  department?: string;
-  jobTitle?: string;
-  roleId?: string;
-}): Promise<UserItem> {
-  return apiCall(async () => {
-    await delay(200);
-    const invited: UserItem = {
-      id: `u-${Date.now()}`,
-      name: args.name,
-      email: args.email,
-      department: args.department,
-      jobTitle: args.jobTitle,
-      roleId: args.roleId,
-      status: "invited",
-      createdAt: nowYmd(),
-    };
-    usersStore = [invited, ...usersStore];
-    return JSON.parse(JSON.stringify(invited));
-  });
-}
-
-export async function setUserStatus(args: {
-  userId: string;
-  status: UserStatus;
-}): Promise<void> {
-  return apiCall(async () => {
-    await delay(120);
-    usersStore = usersStore.map((u) =>
-      u.id === args.userId ? { ...u, status: args.status } : u
-    );
-  });
-}
-
-export async function deleteUser(userId: string): Promise<void> {
-  return apiCall(async () => {
-    await delay(120);
-    usersStore = usersStore.filter((u) => u.id !== userId);
+    const res = await fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete-user", id }),
+    });
+    if (!res.ok) throw new Error(await res.text());
   });
 }

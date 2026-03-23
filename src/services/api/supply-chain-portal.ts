@@ -1,92 +1,63 @@
-import type {
-  PortalVendor,
-  PortalInvitation,
-  SubmissionByVendor,
-  Scope3CategoryPortal,
-  VendorEsgScore,
-  VerificationItem,
-  EvidenceFile,
-  PortalSettings,
-} from "@/types";
-import {
-  mockPortalVendors,
-  mockPortalInvitations,
-  mockSubmissions,
-  mockScope3CategoriesPortal,
-  mockVendorEsgScores,
-  mockVerificationItems,
-  mockEvidenceFiles,
-  mockPortalSettings,
-} from "@/lib/mock";
-import { delay, apiCall } from "@/lib/api";
-import {
-  PortalVendorSchema,
-  PortalInvitationSchema,
-  SubmissionByVendorSchema,
-  Scope3CategoryPortalSchema,
-  VendorEsgScoreSchema,
-  VerificationItemSchema,
-  EvidenceFileSchema,
-  PortalSettingsSchema,
-} from "@/lib/schemas";
+import { apiCall } from "@/lib/api";
+import type { SubmissionByVendor } from "@/types";
 
-export async function getPortalVendors(): Promise<PortalVendor[]> {
-  return apiCall(async () => {
-    await delay(200);
-    return PortalVendorSchema.array().parse(mockPortalVendors);
-  });
+async function fetchVendors(type: string) {
+  const res = await fetch(`/api/vendors?type=${type}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
-export async function getPortalInvitations(): Promise<PortalInvitation[]> {
-  return apiCall(async () => {
-    await delay(150);
-    return PortalInvitationSchema.array().parse(mockPortalInvitations);
-  });
+export async function getPortalVendors() {
+  return apiCall(() => fetchVendors("list"));
 }
 
 export async function getSubmissions(): Promise<SubmissionByVendor[]> {
+  return apiCall(() => fetchVendors("submissions"));
+}
+
+export async function getVendorEsgScores() {
+  return apiCall(() => fetchVendors("esg-scores"));
+}
+
+export async function getPortalInvitations() {
+  return apiCall(() => fetchVendors("invitations"));
+}
+
+export async function getScope3CategoriesPortal() {
+  return apiCall(() => fetchVendors("scope3-categories"));
+}
+
+export async function getVerificationItems() {
+  return apiCall(() => fetchVendors("verification-items"));
+}
+
+export async function getEvidenceFiles(verificationId?: string) {
+  const type = verificationId ? `evidence-files&verificationId=${verificationId}` : "evidence-files";
+  return apiCall(() => fetchVendors(type));
+}
+
+export async function getPortalSettings() {
+  return apiCall(() => fetchVendors("portal-settings"));
+}
+
+export async function saveVendors(items: any[]): Promise<void> {
   return apiCall(async () => {
-    await delay(200);
-    return SubmissionByVendorSchema.array().parse(mockSubmissions);
+    const res = await fetch("/api/vendors", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "save", items }),
+    });
+    if (!res.ok) throw new Error(await res.text());
   });
 }
 
-export async function getScope3CategoriesPortal(): Promise<Scope3CategoryPortal[]> {
+export async function deleteVendor(id: string): Promise<void> {
   return apiCall(async () => {
-    await delay(180);
-    return Scope3CategoryPortalSchema.array().parse(mockScope3CategoriesPortal);
-  });
-}
-
-export async function getVendorEsgScores(): Promise<VendorEsgScore[]> {
-  return apiCall(async () => {
-    await delay(200);
-    return VendorEsgScoreSchema.array().parse(mockVendorEsgScores);
-  });
-}
-
-export async function getVerificationItems(): Promise<VerificationItem[]> {
-  return apiCall(async () => {
-    await delay(200);
-    return VerificationItemSchema.array().parse(mockVerificationItems);
-  });
-}
-
-export async function getEvidenceFiles(
-  verificationId?: string
-): Promise<EvidenceFile[]> {
-  return apiCall(async () => {
-    await delay(150);
-    const data = verificationId
-      ? mockEvidenceFiles.filter((e) => e.verificationId === verificationId)
-      : mockEvidenceFiles;
-    return EvidenceFileSchema.array().parse(data);
-  });
-}
-
-export async function getPortalSettings(): Promise<PortalSettings> {
-  return apiCall(async () => {
-    await delay(100);
-    return PortalSettingsSchema.parse(mockPortalSettings);
+    const res = await fetch("/api/vendors", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete", id }),
+    });
+    if (!res.ok) throw new Error(await res.text());
   });
 }
