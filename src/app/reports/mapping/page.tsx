@@ -41,7 +41,7 @@ export default function ReportsMappingPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((row) => (
+                    {items.map((row: any) => (
                       <tr key={row.id} className="border-b border-border/50">
                         <td className="px-4 py-3 font-mono text-xs">{row.kpiCode}</td>
                         <td className="px-4 py-3 font-medium">{row.kpiName}</td>

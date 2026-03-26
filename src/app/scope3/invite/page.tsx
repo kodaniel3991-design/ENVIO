@@ -30,7 +30,7 @@ export default function PortalInvitePage() {
           <CardContent>
             {isLoading && <Skeleton className="h-40 w-full rounded-lg" />}
             {!isLoading && !invitations?.length && <p className="text-sm text-muted-foreground">발송된 초대가 없습니다.</p>}
-            {!isLoading && invitations?.map((inv) => (
+            {!isLoading && invitations?.map((inv: any) => (
               <div key={inv.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-4 mt-3">
                 <div>
                   <p className="font-medium">{inv.vendorName}</p>

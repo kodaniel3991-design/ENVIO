@@ -46,7 +46,7 @@ export default function ComplianceStatusPage() {
               <ErrorState message={getApiErrorMessage(error)} onRetry={() => refetch()} />
             ) : (
               <div className="space-y-0 divide-y divide-border">
-                {items?.map((item) => (
+                {items?.map((item: any) => (
                   <div
                     key={item.id}
                     className="flex flex-wrap items-center justify-between gap-4 py-4 first:pt-0"

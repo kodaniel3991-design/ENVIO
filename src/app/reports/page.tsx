@@ -99,7 +99,7 @@ export default function ReportGenerationPage() {
                   <Skeleton className="h-16 w-full rounded-md" />
                 ) : (
                   <select className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm">
-                    {templates?.map((t) => (
+                    {templates?.map((t: any) => (
                       <option key={t.id}>
                         {t.name} ({t.framework})
                       </option>
@@ -145,7 +145,7 @@ export default function ReportGenerationPage() {
                 <Skeleton className="h-32 w-full rounded-lg" />
               ) : (
                 <ul className="space-y-2 text-sm">
-                  {readiness.map((r) => (
+                  {readiness.map((r: any) => (
                     <li
                       key={r.framework}
                       className="flex items-center justify-between rounded-md border border-border px-3 py-2"
@@ -185,7 +185,7 @@ export default function ReportGenerationPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {history.map((h) => (
+                    {history.map((h: any) => (
                       <tr
                         key={h.id}
                         className="border-b border-border/50 hover:bg-muted/20"

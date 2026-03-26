@@ -50,7 +50,7 @@ export default function ReductionScenariosPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {scenarios?.map((scenario) => (
+              {scenarios?.map((scenario: any) => (
                 <Card
                   key={scenario.id}
                   className={

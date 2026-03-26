@@ -19,7 +19,7 @@ export default function PortalAssessmentPage() {
         {isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{[1,2,3].map((i) => <Skeleton key={i} className="h-40 rounded-lg" />)}</div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{scores?.map((item) => <EsgScoreCard key={item.vendorId} item={item} />)}</div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{scores?.map((item: any) => <EsgScoreCard key={item.vendorId} item={item} />)}</div>
         )}
       </div>
     </>

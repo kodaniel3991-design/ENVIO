@@ -60,7 +60,7 @@ export default function ReductionHubDashboardPage() {
             <CardTitle className="text-base">Scope별 감축 성과</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 text-sm text-muted-foreground">
-            {scopeSummary?.map((row) => (
+            {scopeSummary?.map((row: any) => (
               <p key={row.scope}>
                 {row.scope.toUpperCase()}: 기준 {row.baselineMt.toFixed(1)} →
                 감축 {row.reducedMt.toFixed(1)} MtCO₂e

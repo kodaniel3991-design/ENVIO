@@ -25,7 +25,7 @@ export default function ReportTemplatesPage() {
           <Skeleton className="h-40 w-full rounded-lg" />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {templates.map((t) => (
+            {templates.map((t: any) => (
               <Card key={t.id}>
                 <CardHeader className="flex flex-row items-start justify-between pb-2">
                   <CardTitle className="text-base">{t.name}</CardTitle>

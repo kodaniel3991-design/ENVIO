@@ -27,7 +27,7 @@ export default function RolesPage() {
 
   const [list, setList] = useState<RoleItem[]>([]);
   useEffect(() => {
-    if (roles) setList(roles.map((r) => ({ ...r })));
+    if (roles) setList(roles.map((r: any) => ({ ...r })));
   }, [roles]);
 
   const handleAdd = () => {
@@ -43,14 +43,14 @@ export default function RolesPage() {
 
   const handleChange = (id: string, field: keyof RoleItem, value: string) => {
     setList((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, [field]: value } : r))
+      prev.map((r: any) => (r.id === id ? { ...r, [field]: value } : r))
     );
   };
 
   const handleSave = async () => {
     const toSave = list
       .filter((r) => r.name.trim() !== "")
-      .map((r) => ({
+      .map((r: any) => ({
         ...r,
         name: r.name.trim(),
         description: r.description?.trim() || undefined,
@@ -98,7 +98,7 @@ export default function RolesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {list.map((r) => (
+                  {list.map((r: any) => (
                     <tr key={r.id}>
                       <td className="py-2 pr-2">
                         <input

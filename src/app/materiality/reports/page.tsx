@@ -32,7 +32,7 @@ export default function MaterialityReportsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {links.map((r) => (
+                  {links.map((r: any) => (
                     <tr key={r.id} className="border-b border-border/50">
                       <td className="px-4 py-3 font-mono text-xs">{r.issueId}</td>
                       <td className="px-4 py-3 font-medium">{r.reportTitle}</td>
