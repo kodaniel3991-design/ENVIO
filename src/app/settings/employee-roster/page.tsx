@@ -339,15 +339,14 @@ export default function SettingsEmployeeRosterPage() {
   // 엑셀 양식 다운로드
   const handleTemplateDownload = () => {
     const headers = [
-      "사업장명*", "부서", "소속팀", "사원번호", "이름*", "직급", "관리자(Y/N)",
+      "사업장명*", "부서", "소속팀", "사원번호", "이름*", "직급",
       "재직상태", "고용형태", "입사일", "퇴사일",
-      "성별", "출생연도", "국적", "외국인여부(Y/N)", "장애여부(Y/N)",
+      "성별", "출생연도", "국적", "장애여부(Y/N)",
       "출퇴근교통수단", "연료", "주소",
       "비고",
     ];
     const note = [
       "※ 사업장명·이름 필수. " +
-      "관리자(Y/N): 비워두면 직급 기준 자동 설정(과장 이상 → Y)  " +
       "재직상태: 재직/휴직/퇴사  " +
       "고용형태: 정규직/계약직/파견/인턴/기타  " +
       "성별: 남/여/기타/미응답  " +
@@ -451,7 +450,12 @@ export default function SettingsEmployeeRosterPage() {
             gender: byStr("성별"),
             birthYear: (() => { const v = parseInt(String(r[col("출생연도")] ?? "")); return isNaN(v) ? undefined : v; })(),
             nationality: byStr("국적"),
-            isForeigner: (() => { const v = String(r[col("외국인여부(Y/N)")] ?? "").trim().toUpperCase(); return v === "Y" ? true : v === "N" ? false : undefined; })(),
+            isForeigner: (() => {
+              const KOREAN = ["한국", "대한민국", "korea", "korean", "kr", "south korea"];
+              const nat = String(r[col("국적")] ?? "").trim();
+              if (!nat) return undefined;
+              return !KOREAN.includes(nat.toLowerCase());
+            })(),
             isDisabled: (() => { const v = String(r[col("장애여부(Y/N)")] ?? "").trim().toUpperCase(); return v === "Y" ? true : v === "N" ? false : undefined; })(),
             isManager: (() => {
               const MANAGER_POSITIONS = ["과장", "차장", "부장", "이사", "상무", "전무", "부사장", "대표이사"];

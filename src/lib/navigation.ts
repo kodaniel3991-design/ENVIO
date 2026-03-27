@@ -48,6 +48,23 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     type: "section",
+    label: "시작하기",
+    children: [
+      {
+        label: "",
+        children: [
+          link("/getting-started", "진행 현황"),
+          link("/getting-started/organization", "① 조직 설정"),
+          link("/getting-started/facility", "② 사업장 설정"),
+          link("/getting-started/scope", "③ Scope 설정"),
+          link("/getting-started/kpi", "④ KPI 선택"),
+          link("/getting-started/framework", "⑤ 공시 기준 선택"),
+        ],
+      },
+    ],
+  },
+  {
+    type: "section",
     label: "데이터 관리",
     children: [
       {
