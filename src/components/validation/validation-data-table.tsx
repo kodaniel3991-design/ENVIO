@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 interface ValidationDataTableProps {
   rows: ValidationDataRow[];
   onRowClick?: (row: ValidationDataRow) => void;
+  onStatusChange?: (id: string, status: string) => void;
 }
 
 const COLUMNS = [
@@ -38,6 +39,7 @@ const COLUMNS = [
 export function ValidationDataTable({
   rows,
   onRowClick,
+  onStatusChange,
 }: ValidationDataTableProps) {
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -105,11 +107,10 @@ export function ValidationDataTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>상세보기</DropdownMenuItem>
-                      <DropdownMenuItem>검토 시작</DropdownMenuItem>
-                      <DropdownMenuItem>수정 요청</DropdownMenuItem>
-                      <DropdownMenuItem>증빙 요청</DropdownMenuItem>
-                      <DropdownMenuItem>검증 완료</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onRowClick?.(row)}>상세보기</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onStatusChange?.(row.id, "under_review")}>검토 시작</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onStatusChange?.(row.id, "needs_evidence")}>증빙 요청</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onStatusChange?.(row.id, "verified")}>검증 완료</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </td>

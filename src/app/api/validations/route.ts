@@ -100,6 +100,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    if (action === "update-status") {
+      const { id, status } = body;
+      await prisma.dataValidation.update({
+        where: { id },
+        data: { status },
+      });
+      return NextResponse.json({ ok: true });
+    }
+
     if (action === "approve") {
       const { id, status, approver, comment } = body;
       await prisma.dataApproval.update({

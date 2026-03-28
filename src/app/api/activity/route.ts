@@ -32,10 +32,21 @@ export async function POST(req: NextRequest) {
       facilityId: string;
       year: number;
       values: number[];
+      actor?: string;
     } = await req.json();
 
     if (!body.facilityId || !body.year || !Array.isArray(body.values)) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
+
+    // 이전 값 조회 (변경 내역 비교용)
+    const prevRows = await prisma.activityData.findMany({
+      where: { facilityId: body.facilityId, year: body.year },
+      orderBy: { month: "asc" },
+    });
+    const prevValues = Array(12).fill(0);
+    for (const row of prevRows) {
+      prevValues[row.month - 1] = Number(row.activityValue);
     }
 
     for (let month = 1; month <= 12; month++) {
@@ -57,6 +68,28 @@ export async function POST(req: NextRequest) {
         },
       });
     }
+
+    // 변경된 월 감지 후 감사 로그 기록
+    const changedMonths: string[] = [];
+    for (let i = 0; i < 12; i++) {
+      const prev = prevValues[i];
+      const next = body.values[i] ?? 0;
+      if (prev !== next) {
+        changedMonths.push(`${i + 1}월: ${prev} → ${next}`);
+      }
+    }
+    const isNew = prevRows.length === 0;
+    const action = isNew ? "데이터 입력" : "데이터 수정";
+
+    await prisma.activityAuditLog.create({
+      data: {
+        facilityId: body.facilityId,
+        year: body.year,
+        action,
+        actor: body.actor ?? "사용자",
+        detail: changedMonths.length > 0 ? changedMonths.join(", ") : "변경 없음",
+      },
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

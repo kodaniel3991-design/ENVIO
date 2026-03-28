@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { Providers } from "@/app/providers";
 import { AppLayout } from "./app-layout";
+import { SeedInitializer } from "./seed-initializer";
 
 function LayoutFallback() {
   return (
@@ -23,6 +24,7 @@ export function FullApp({ children }: { children: React.ReactNode }) {
 
   return (
     <Providers>
+      <SeedInitializer />
       <Suspense fallback={<LayoutFallback />}>
         <AppLayout>
           <Suspense fallback={<LayoutFallback />}>{children}</Suspense>

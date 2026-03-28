@@ -17,7 +17,6 @@ import { EmissionTrendCard } from "@/components/scope1/emission-trend-card";
 import { AuditLogTable } from "@/components/scope1/audit-log-table";
 import { ActionFooter, type DataStatus } from "@/components/scope1/action-footer";
 import {
-  SCOPE1_AUDIT_LOGS,
   SCOPE1_CATEGORIES,
 } from "@/lib/scope1-mock-data";
 import type { Scope1FuelType, ScopeCategoryId } from "@/types/scope1";
@@ -25,6 +24,8 @@ import { calculateMonthlyEmissions } from "@/lib/scope1-utils";
 import { Badge } from "@/components/ui/badge";
 import { useFacilities, useSaveFacilities, type DbFacilityRow } from "@/hooks/use-facilities";
 import { useActivity, useSaveActivity } from "@/hooks/use-activity";
+import { useAuditLogs } from "@/hooks/use-audit-logs";
+import { useScopeEmissionFactors } from "@/hooks/use-emission-factors";
 import type { HistoricalMonthly } from "@/components/scope1/validation-insights-card";
 
 type InputMode = "manual" | "excel" | "api";
@@ -66,6 +67,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export default function Scope1Page() {
   const queryClient = useQueryClient();
+  const { getFactorByFuel: getDbFactor } = useScopeEmissionFactors(1);
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => String(currentYear - i));
   const [year, setYear] = useState(String(currentYear));
@@ -119,6 +121,7 @@ export default function Scope1Page() {
 
   // DB에서 월별 활동량 로드
   const { data: dbActivity } = useActivity(selectedFacilityId, year);
+  const { data: auditLogs = [] } = useAuditLogs(selectedFacilityId, year);
 
   // 시설 전환 시 해당 시설의 활동량 쿼리 강제 갱신 (캐시 무효화)
   useEffect(() => {
@@ -292,10 +295,16 @@ export default function Scope1Page() {
     e.target.value = "";
   };
 
-  const monthlyTotals = useMemo(
-    () => calculateMonthlyEmissions(currentActivity, toFuelType(selectedFacility?.fuelName ?? "LNG")).map((r) => r.emission),
-    [currentActivity, selectedFacility],
-  );
+  // DB 배출계수 우선, 없으면 하드코딩 fallback
+  const fuelType = toFuelType(selectedFacility?.fuelName ?? "LNG");
+  const dbFactor = getDbFactor(fuelType);
+
+  const monthlyTotals = useMemo(() => {
+    if (dbFactor) {
+      return currentActivity.map((v) => (Number.isNaN(v) ? 0 : v) * dbFactor.combined);
+    }
+    return calculateMonthlyEmissions(currentActivity, fuelType).map((r) => r.emission);
+  }, [currentActivity, fuelType, dbFactor]);
 
   const totalEmission = useMemo(() => monthlyTotals.reduce((s, v) => s + v, 0), [monthlyTotals]);
   const hasErrors = currentActivity.some((v) => v < 0);
@@ -457,7 +466,7 @@ export default function Scope1Page() {
           <div className="grid gap-4 lg:grid-cols-2 items-stretch">
             <ValidationInsightsCard activityByMonth={currentActivity} year={year} historicalMonthly={historicalMonthly} />
             <div className="h-full">
-              <AuditLogTable items={SCOPE1_AUDIT_LOGS} />
+              <AuditLogTable items={auditLogs} />
             </div>
           </div>
 

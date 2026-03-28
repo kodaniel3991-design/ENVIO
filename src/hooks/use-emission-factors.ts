@@ -48,7 +48,28 @@ export function useEmissionFactors(params: { scope?: number; fuel_code?: string;
   return useQuery({
     queryKey: ["emission-factors", params],
     queryFn: () => fetchFactors(params),
+    staleTime: 1000 * 60 * 30, // 30분
   });
+}
+
+/** scope별 배출계수를 로드하고, fuelCode로 가스별 계수를 조회하는 유틸 훅 */
+export function useScopeEmissionFactors(scope: number) {
+  const query = useEmissionFactors({ scope, active: true });
+
+  const getFactorByFuel = (fuelCode: string) => {
+    const f = query.data?.find((d) => d.fuel_code === fuelCode);
+    if (!f) return null;
+    const co2 = Number(f.co2_factor ?? 0);
+    const ch4 = Number(f.ch4_factor ?? 0);
+    const n2o = Number(f.n2o_factor ?? 0);
+    const gwpCh4 = Number(f.gwp_ch4 ?? 28);
+    const gwpN2o = Number(f.gwp_n2o ?? 265);
+    const combined = co2 + ch4 * gwpCh4 + n2o * gwpN2o;
+    const source = `${f.source_name} (${f.source_version ?? ""}, ${f.factor_code})`;
+    return { co2, ch4, n2o, gwpCh4, gwpN2o, combined, source };
+  };
+
+  return { ...query, getFactorByFuel };
 }
 
 export function useCreateEmissionFactor() {

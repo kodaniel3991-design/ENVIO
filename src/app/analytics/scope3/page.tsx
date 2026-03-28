@@ -1,7 +1,7 @@
  "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { ScopeTabs } from "@/components/scope1/scope-tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn, formatNumber } from "@/lib/utils";
 import { ValidationInsightsCard } from "@/components/scope1/validation-insights-card";
 import { AuditLogTable } from "@/components/scope1/audit-log-table";
-import { ActionFooter } from "@/components/scope1/action-footer";
+import { ActionFooter, type DataStatus } from "@/components/scope1/action-footer";
 import { EmissionTrendCard } from "@/components/scope1/emission-trend-card";
 import { Scope3CategorySidebar } from "@/components/scope3/category-sidebar";
 import {
@@ -23,9 +23,11 @@ import type {
   PurchasedGoodsActivity,
   DataEntryMode,
 } from "@/types/scope3-purchased";
-import type { AuditLogItem } from "@/types/scope1";
+
 import { useFacilities, useSaveFacilities } from "@/hooks/use-facilities";
 import { useActivity, useSaveActivity } from "@/hooks/use-activity";
+import { useAuditLogs } from "@/hooks/use-audit-logs";
+import type { HistoricalMonthly } from "@/components/scope1/validation-insights-card";
 import { useEmployees } from "@/hooks/use-employees";
 import { calcEmployeeDailyEmission, getEmployeeCommuteFactorPerKm } from "@/lib/commute-factors";
 import type { CommuteTransportType, WorksiteItem } from "@/types";
@@ -592,26 +594,6 @@ const INITIAL_ACTIVITIES: PurchasedGoodsActivity[] = [
   },
 ];
 
-const AUDIT_LOG_ITEMS: AuditLogItem[] = [
-  {
-    id: "s3-log-1",
-    actor: "김OO",
-    action: "데이터 입력",
-    timestamp: "2026-03-10 09:20",
-  },
-  {
-    id: "s3-log-2",
-    actor: "이OO",
-    action: "데이터 수정",
-    timestamp: "2026-03-11 15:10",
-  },
-  {
-    id: "s3-log-3",
-    actor: "박OO",
-    action: "검토 완료",
-    timestamp: "2026-03-12 18:05",
-  },
-];
 
 interface AddActivityModalProps {
   open: boolean;
@@ -742,10 +724,12 @@ function AddActivityModal({ open, onClose, onSave }: AddActivityModalProps) {
 }
 
 export default function Scope3Page() {
+  const queryClient = useQueryClient();
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => String(currentYear - i));
   const [year, setYear] = useState(String(currentYear));
   const [mode, setMode] = useState<DataEntryMode>("manual");
+  const [dataStatus, setDataStatus] = useState<DataStatus>("draft");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("u1");
   const [activities, setActivities] =
     useState<PurchasedGoodsActivity[]>(INITIAL_ACTIVITIES);
@@ -899,16 +883,47 @@ export default function Scope3Page() {
 
   // 선택된 배출원의 활동량 DB 로드 (시설 저장 후 재방문 시 복원)
   const { data: dbActivityValues } = useActivity(selectedFacilityId, year);
+  const { data: auditLogs = [] } = useAuditLogs(selectedFacilityId, year);
 
-  // u7: DB에서 로드한 출근일 수를 u7WorkdaysMap에 반영 (로컬 편집 없을 때만)
+  // 시설 전환 시 활동량 쿼리 강제 갱신
   useEffect(() => {
-    if (!isU7 || !selectedFacilityId || !dbActivityValues) return;
-    setU7WorkdaysMap((prev) => {
-      if (prev[selectedFacilityId]) return prev; // 이미 로컬 편집 있으면 유지
-      return { ...prev, [selectedFacilityId]: dbActivityValues };
-    });
+    if (selectedFacilityId) {
+      queryClient.invalidateQueries({ queryKey: ["activity", selectedFacilityId, year] });
+    }
+  }, [selectedFacilityId, year, queryClient]);
+
+  // 전년도 데이터 로드 (동월 비교용)
+  const prevYear1 = String(parseInt(year) - 1);
+  const prevYear2 = String(parseInt(year) - 2);
+  const { data: prevYear1Activity } = useActivity(selectedFacilityId, prevYear1);
+  const { data: prevYear2Activity } = useActivity(selectedFacilityId, prevYear2);
+
+  const historicalMonthly = useMemo<HistoricalMonthly[]>(() => {
+    const entries: HistoricalMonthly[] = [
+      { year: prevYear1, values: prevYear1Activity ?? Array(12).fill(0) },
+      { year: prevYear2, values: prevYear2Activity ?? Array(12).fill(0) },
+    ];
+    return entries.filter((h) => h.values.some((v) => v > 0));
+  }, [prevYear1, prevYear2, prevYear1Activity, prevYear2Activity]);
+
+  // DB 활동량을 로컬 상태에 반영 (u7=출근일 수, 일반=활동량)
+  useEffect(() => {
+    if (!selectedFacilityId || !dbActivityValues) return;
+    if (isU7) {
+      setU7WorkdaysMap((prev) => {
+        if (prev[selectedFacilityId]) return prev;
+        return { ...prev, [selectedFacilityId]: dbActivityValues };
+      });
+    } else {
+      setScope3LocalActivity((prev) => {
+        if (prev[selectedFacilityId]) return prev;
+        return { ...prev, [selectedFacilityId]: dbActivityValues };
+      });
+    }
   }, [isU7, selectedFacilityId, dbActivityValues]);
   const [localScope3Facilities, setLocalScope3Facilities] = useState<Scope3FacilityRow[]>([]);
+  // 일반 카테고리 활동량 로컬 상태 (시설 ID 기반)
+  const [scope3LocalActivity, setScope3LocalActivity] = useState<Record<string, number[]>>({});
 
   // 카테고리 변경 시 로컬 상태 초기화
   useEffect(() => {
@@ -916,7 +931,14 @@ export default function Scope3Page() {
     setLocalU7Facilities([]);
     setSelectedFacilityId("");
     setU7WorkdaysMap({});
+    setScope3LocalActivity({});
   }, [selectedCategoryId]);
+
+  // 연도 변경 시 로컬 활동량 초기화
+  useEffect(() => {
+    setScope3LocalActivity({});
+    setU7WorkdaysMap({});
+  }, [year]);
 
   // u7: DB 미저장 상태에서 직원 콤보 행이 로드되면 로컬 상태 업데이트
   useEffect(() => {
@@ -1022,11 +1044,16 @@ export default function Scope3Page() {
     }
   }, [selectedActivity, visibleActivities]);
 
-  const activityValues =
-    (selectedActivity &&
-      monthlyActivityById[selectedActivity.id] &&
+  // 시설 ID 기반으로 활동량 조회 (DB → 로컬 편집 → 기본값)
+  const activityValues = useMemo(() => {
+    if (!isU7 && selectedFacilityId && scope3LocalActivity[selectedFacilityId]) {
+      return scope3LocalActivity[selectedFacilityId];
+    }
+    // fallback: 목업 활동 기반 (이전 호환용)
+    return (selectedActivity &&
       monthlyActivityById[selectedActivity.id]) ||
-    Array(12).fill(0);
+      Array(12).fill(0);
+  }, [isU7, selectedFacilityId, scope3LocalActivity, selectedActivity, monthlyActivityById]);
 
   const emissionFactor = selectedActivity?.emissionFactor ?? 0;
 
@@ -1048,6 +1075,10 @@ export default function Scope3Page() {
     n2o: emissions.map((v) => v * 0.02),
   }), [emissions]);
 
+  // 현재 활동량 (검증용)
+  const currentInputValues = isU7 ? u7Workdays : activityValues;
+  const hasErrors = currentInputValues.some((v) => v < 0);
+
   // 활동량 저장: u7 = 출근일 수, 일반 = 활동량 입력값
   const handleSaveActivity = () => {
     if (!selectedFacilityId) return;
@@ -1058,12 +1089,61 @@ export default function Scope3Page() {
     }
   };
 
+  // 검증 요청
+  const handleRequestValidation = async () => {
+    const catLabel = SCOPE3_CATEGORIES.find((c) => c.id === selectedCategoryId)?.label ?? selectedCategoryId;
+    await fetch("/api/validations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "save-validation",
+        item: {
+          id: crypto.randomUUID(),
+          scope: "Scope 3",
+          category: catLabel,
+          emissionSource: isU7 ? "직원 출퇴근" : (selectedFacility?.facilityName ?? "미선택"),
+          site: isU7 ? "직원 출퇴근" : (selectedFacility?.facilityName ?? "미선택"),
+          period: year,
+          activityAmount: String(currentInputValues.reduce((s, v) => s + v, 0).toFixed(3)),
+          emissions: String(totalEmission.toFixed(4)),
+          status: "submitted",
+        },
+      }),
+    });
+    setDataStatus("reviewing");
+  };
+
+  // 저장 (ActionFooter용)
+  const handleSaveFromFooter = async () => {
+    if (!selectedFacilityId) return;
+    const values = isU7 ? u7Workdays : activityValues;
+    await new Promise<void>((resolve, reject) => {
+      saveActivityMutation.mutate(
+        { facilityId: selectedFacilityId, year, values },
+        { onSuccess: () => resolve(), onError: () => reject() },
+      );
+    });
+  };
+
   const handleActivityValueChange = (index: number, raw: string) => {
     const v = raw === "" ? 0 : parseFloat(raw);
+    const rounded = Number.isNaN(v) ? 0 : Math.round(v * 1000) / 1000;
+
+    // 시설 ID 기반 로컬 상태에 저장 (DB 연동)
+    if (selectedFacilityId) {
+      setScope3LocalActivity((prev) => {
+        const current = prev[selectedFacilityId] ?? activityValues;
+        const next = [...current];
+        next[index] = rounded;
+        return { ...prev, [selectedFacilityId]: next };
+      });
+    }
+
+    // 이전 호환: 목업 활동 기반 상태에도 반영
     setMonthlyActivityById((prev) => {
       const current = prev[selectedActivity.id] ?? Array(12).fill(0);
       const next = [...current];
-      next[index] = Number.isNaN(v) ? 0 : v;
+      next[index] = rounded;
       return { ...prev, [selectedActivity.id]: next };
     });
   };
@@ -1469,13 +1549,19 @@ export default function Scope3Page() {
           </section>
 
           {/* 상태 문구 + 액션 버튼 */}
-          <ActionFooter year={year} />
+          <ActionFooter
+            year={year}
+            status={dataStatus}
+            hasErrors={hasErrors}
+            onRequestValidation={handleRequestValidation}
+            onSave={handleSaveFromFooter}
+          />
 
           {/* 하단 카드 2개 */}
           <div className="grid gap-4 lg:grid-cols-2 items-stretch">
-            <ValidationInsightsCard />
+            <ValidationInsightsCard activityByMonth={currentInputValues} year={year} historicalMonthly={historicalMonthly} />
             <div className="h-full">
-              <AuditLogTable items={AUDIT_LOG_ITEMS} />
+              <AuditLogTable items={auditLogs} />
             </div>
           </div>
 

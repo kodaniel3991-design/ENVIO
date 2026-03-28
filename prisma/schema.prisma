@@ -23,6 +23,7 @@ model EmissionFacility {
   updatedAt    DateTime             @default(now()) @updatedAt @map("updated_at")
   attachments  ActivityAttachment[]
   activityData ActivityData[]
+  auditLogs    ActivityAuditLog[]
 
   @@map("emission_facilities")
 }
@@ -39,6 +40,19 @@ model ActivityData {
 
   @@unique([facilityId, year, month], name: "uq_activity_data")
   @@map("activity_data")
+}
+
+model ActivityAuditLog {
+  id         Int              @id @default(autoincrement())
+  facilityId String           @map("facility_id") @db.VarChar(50)
+  year       Int
+  action     String           @db.VarChar(50)
+  actor      String           @default("시스템") @db.VarChar(100)
+  detail     String?          @db.Text
+  createdAt  DateTime         @default(now()) @map("created_at")
+  facility   EmissionFacility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  @@map("activity_audit_logs")
 }
 
 model ActivityAttachment {
