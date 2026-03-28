@@ -12,35 +12,70 @@
 
 @layer base {
   :root {
+    /* ── LUON AI Design System ── Navy Primary + Green Accent ── */
     --font-pretendard: "Pretendard Variable", Pretendard, system-ui, sans-serif;
-    --background: 0 0% 100%;
-    --foreground: 220 20% 14%;
-    --card: 0 0% 100%;
-    --card-foreground: 220 20% 14%;
+    --font-display: "Sora", "Pretendard Variable", sans-serif;
+    --font-mono: "DM Mono", ui-monospace, monospace;
+
+    /* Primary — Deep Navy (CI 시그니처) */
+    --background: 222 20% 98%;       /* #f4f6fa — bg-page */
+    --foreground: 224 40% 8%;        /* #090e1e — text-primary */
+    --card: 0 0% 100%;               /* #ffffff — bg-surface */
+    --card-foreground: 224 40% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 14%;
-    --primary: 142 76% 36%;
+    --popover-foreground: 224 40% 8%;
+
+    /* Primary = Navy-500 #2d3f5a */
+    --primary: 215 33% 27%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 20% 14%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 10% 46%;
-    --accent: 220 14% 96%;
-    --accent-foreground: 220 20% 14%;
-    --destructive: 0 84% 60%;
+
+    /* Secondary = Green Accent (CTA/성공) */
+    --secondary: 152 78% 38%;        /* #1aa968 */
+    --secondary-foreground: 0 0% 100%;
+
+    /* Muted — Navy-tinted Cool Gray */
+    --muted: 222 20% 94%;            /* #e8ecf4 */
+    --muted-foreground: 218 18% 44%; /* #4a5880 */
+
+    /* Accent — subtle bg for hover/active */
+    --accent: 222 20% 94%;
+    --accent-foreground: 215 33% 27%;
+
+    --destructive: 0 84% 60%;        /* #dc2626 */
     --destructive-foreground: 0 0% 100%;
-    --border: 220 14% 90%;
-    --input: 220 14% 90%;
-    --ring: 142 76% 36%;
-    --radius: 0.625rem;
-    /* CarbonOS custom */
-    --carbon-surface: 0 0% 98%;
-    --carbon-elevated: 0 0% 100%;
-    --carbon-border: 220 14% 90%;
-    --carbon-muted: 220 10% 92%;
-    --carbon-success: 142 76% 36%;
-    --carbon-warning: 38 92% 50%;
-    --carbon-danger: 0 84% 60%;
+
+    --border: 222 18% 84%;           /* #d0d5e5 — border-subtle */
+    --input: 222 18% 84%;
+    --ring: 215 33% 27%;             /* navy focus ring */
+
+    --radius: 0.625rem;              /* 10px — radius-md */
+
+    /* Semantic tokens */
+    --carbon-surface: 222 20% 98%;   /* #f4f6fa */
+    --carbon-elevated: 0 0% 100%;    /* #ffffff */
+    --carbon-border: 222 18% 84%;    /* #d0d5e5 */
+    --carbon-muted: 222 20% 94%;     /* #e8ecf4 */
+    --carbon-success: 152 78% 38%;   /* #1aa968 — green accent */
+    --carbon-warning: 38 92% 50%;    /* #d97706 */
+    --carbon-danger: 0 84% 60%;      /* #dc2626 */
+
+    /* LUON AI extended palette */
+    --navy-50: 222 23% 95%;          /* #eef0f5 */
+    --navy-100: 222 19% 84%;         /* #d0d5e5 */
+    --navy-200: 220 20% 72%;         /* #a2aece */
+    --navy-300: 220 24% 53%;         /* #6878a8 */
+    --navy-400: 218 33% 36%;         /* #3d4f7c */
+    --navy-500: 215 33% 27%;         /* #2d3f5a */
+    --navy-600: 212 38% 19%;         /* #1e2d45 */
+    --navy-700: 214 46% 13%;         /* #111c30 */
+    --navy-800: 220 53% 8%;          /* #090e1e */
+    --green-50: 150 52% 95%;         /* #edfaf3 */
+    --green-100: 150 50% 85%;        /* #c6f0db */
+    --green-200: 150 52% 71%;        /* #8eddb8 */
+    --green-300: 150 55% 52%;        /* #46c48a */
+    --green-400: 152 78% 38%;        /* #1aa968 */
+    --green-500: 152 78% 31%;        /* #138c53 */
+    --green-600: 152 78% 24%;        /* #0d6b3e */
   }
 }
 

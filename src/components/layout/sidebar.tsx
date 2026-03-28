@@ -65,8 +65,8 @@ function NavLink({ item, collapsed }: { item: NavLinkItem; collapsed: boolean })
       className={cn(
         "block rounded-md px-3 py-1.5 text-[13px] transition-colors",
         active
-          ? "bg-primary/10 font-medium text-primary"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          ? "bg-navy-600 font-medium text-green-400"
+          : "text-navy-300 hover:bg-navy-700 hover:text-white"
       )}
     >
       {item.label}
@@ -86,7 +86,7 @@ function NavGroup({
   return (
     <div className="flex flex-col gap-0.5">
       {section.label && (
-        <span className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+        <span className="px-3 pt-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-navy-400">
           {section.label}
         </span>
       )}
@@ -97,7 +97,7 @@ function NavGroup({
         const group = child as NavGroupWithChildren;
         return (
           <div key={group.label} className="flex flex-col gap-0.5">
-            <span className="px-3 pt-1.5 pb-0.5 text-[10px] font-semibold text-muted-foreground/70">
+            <span className="px-3 pt-1.5 pb-0.5 text-[10px] font-semibold text-navy-400">
               {group.label}
             </span>
             {group.children.map((link) => (
@@ -138,8 +138,8 @@ function NavItem({
           "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
           collapsed && "justify-center px-2",
           active
-            ? "bg-primary/10 text-primary"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? "bg-navy-600 text-green-400"
+            : "text-navy-300 hover:bg-navy-700 hover:text-white"
         )}
       >
         <Icon className="h-4 w-4 shrink-0" />
@@ -158,8 +158,8 @@ function NavItem({
           "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
           collapsed && "justify-center px-2",
           active
-            ? "text-primary"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            ? "text-green-400"
+            : "text-navy-300 hover:bg-navy-700 hover:text-white"
         )}
       >
         <Icon className="h-4 w-4 shrink-0" />
@@ -178,7 +178,7 @@ function NavItem({
 
       {/* 2~3depth 하위 메뉴 */}
       {!collapsed && open && (
-        <div className="ml-3 mt-0.5 flex flex-col gap-0.5 border-l border-border pl-3">
+        <div className="ml-3 mt-0.5 flex flex-col gap-0.5 border-l border-navy-600 pl-3">
           {item.children.map((section, i) => (
             <NavGroup key={section.label || i} section={section} collapsed={collapsed} />
           ))}
@@ -194,15 +194,15 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-border bg-card transition-all duration-200",
+        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-navy-700 bg-navy-800 transition-all duration-200",
         collapsed ? "w-16" : "w-56"
       )}
     >
       {/* 로고 */}
-      <div className="flex h-16 shrink-0 items-center border-b border-border px-4">
+      <div className="flex h-16 shrink-0 items-center border-b border-navy-700 px-4">
         {collapsed ? (
           <div className="flex w-full items-center justify-center">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-navy-500 text-xs font-bold text-white">
               E
             </div>
           </div>
@@ -219,11 +219,11 @@ export function Sidebar() {
       </nav>
 
       {/* 접기/펼치기 버튼 */}
-      <div className="shrink-0 border-t border-border p-2">
+      <div className="shrink-0 border-t border-navy-700 p-2">
         <button
           onClick={toggle}
           className={cn(
-            "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
+            "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-navy-300 hover:bg-navy-700 hover:text-white transition-colors",
             collapsed && "justify-center px-2"
           )}
           aria-label={collapsed ? "사이드바 펼치기" : "사이드바 접기"}

@@ -17,7 +17,7 @@ export function Logo({ className, iconOnly = false }: LogoProps) {
 
   return (
     <div className={cn("flex items-center", className)}>
-      <Image src="/logo.svg" alt="ESG ON" width={84} height={26} className="object-contain" />
+      <Image src="/logo.svg" alt="ESG ON" width={84} height={26} className="object-contain brightness-0 invert" />
     </div>
   );
 }
