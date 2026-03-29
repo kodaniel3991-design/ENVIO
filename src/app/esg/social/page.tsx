@@ -9,6 +9,7 @@ import { SocialFilters } from "@/components/social-data/social-filters";
 import { SocialDataTable } from "@/components/social-data/social-data-table";
 import { SocialDetailDrawer } from "@/components/social-data/social-detail-drawer";
 import { DataQualityCards } from "@/components/environment-data/data-quality-cards";
+import { CollapsibleSection } from "@/components/common/collapsible-section";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -51,22 +52,18 @@ export default function SocialDataPage() {
 
       <div className="mt-8 space-y-8">
         {/* 1. KPI Summary Section */}
-        <section>
-          <h2 className="sr-only">KPI 요약</h2>
+        <CollapsibleSection title="KPI 요약" defaultOpen>
           <SocialKpiCards items={MOCK_SOCIAL_KPI} />
-        </section>
+        </CollapsibleSection>
 
-        {/* 2. AI Insight Panel */}
-        <section>
+        <CollapsibleSection title="AI 인사이트" defaultOpen>
           <SocialAiInsight data={MOCK_SOCIAL_AI_INSIGHT} />
-        </section>
+        </CollapsibleSection>
 
-        {/* 3. Filter Bar */}
         <section>
           <SocialFilters />
         </section>
 
-        {/* 4. Data Table */}
         <section>
           <h2 className="mb-3 text-sm font-medium text-muted-foreground">
             사회 데이터 목록
@@ -77,7 +74,6 @@ export default function SocialDataPage() {
           />
         </section>
 
-        {/* 5. Detail Drawer */}
         {selectedRow && (
           <SocialDetailDrawer
             detail={detail}
@@ -85,26 +81,17 @@ export default function SocialDataPage() {
           />
         )}
 
-        {/* 6. Data Quality Section */}
-        <section>
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-            데이터 품질
-          </h2>
+        <CollapsibleSection title="데이터 품질">
           <DataQualityCards items={MOCK_SOCIAL_DATA_QUALITY} />
-        </section>
+        </CollapsibleSection>
 
-        {/* 7. Trend Analytics Section */}
-        <section>
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-            추이 분석
-          </h2>
+        <CollapsibleSection title="추이 분석">
           <SocialTrendCharts trend={MOCK_SOCIAL_TREND} />
-        </section>
+        </CollapsibleSection>
 
-        {/* 8. Category Breakdown */}
-        <section>
+        <CollapsibleSection title="카테고리 요약">
           <SocialCategoryBreakdown items={MOCK_SOCIAL_CATEGORY_BREAKDOWN} />
-        </section>
+        </CollapsibleSection>
       </div>
     </>
   );

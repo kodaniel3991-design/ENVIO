@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { EsgSubNav } from "@/components/esg/esg-sub-nav";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { CollapsibleSection } from "@/components/common/collapsible-section";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -354,6 +355,7 @@ export default function KpiMappingPage() {
 
       <div className="mt-8 space-y-6">
         {/* 요약 카드 — Stat Cards Clean Minimal */}
+        <CollapsibleSection title="KPI 요약">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="overflow-hidden border-border/80 transition-all hover:shadow-md hover:-translate-y-0.5">
             <CardContent className="p-4">
@@ -429,6 +431,7 @@ export default function KpiMappingPage() {
             </CardContent>
           </Card>
         </div>
+        </CollapsibleSection>
 
         {/* 뷰 전환 토글 */}
         <div className="flex items-center justify-between">

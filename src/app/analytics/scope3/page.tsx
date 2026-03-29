@@ -7,6 +7,9 @@ import { ScopeTabs } from "@/components/scope1/scope-tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { PenLine, BarChart3, ShieldCheck, Plug } from "lucide-react";
+import { ApiIntegrationPanel } from "@/components/integrations/api-integration-panel";
 import { cn, formatNumber } from "@/lib/utils";
 import { ValidationInsightsCard } from "@/components/scope1/validation-insights-card";
 import { AuditLogTable } from "@/components/scope1/audit-log-table";
@@ -1185,7 +1188,28 @@ export default function Scope3Page() {
         />
 
         {/* 우측 메인 콘텐츠 */}
-        <div className="space-y-6">
+        <Tabs defaultValue="input" className="space-y-5">
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="input" className="gap-1.5 text-xs">
+              <PenLine className="h-3.5 w-3.5" />
+              데이터 입력
+            </TabsTrigger>
+            <TabsTrigger value="api" className="gap-1.5 text-xs">
+              <Plug className="h-3.5 w-3.5" />
+              API 연동
+            </TabsTrigger>
+            <TabsTrigger value="analysis" className="gap-1.5 text-xs">
+              <BarChart3 className="h-3.5 w-3.5" />
+              분석 &amp; 비교
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="gap-1.5 text-xs">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              검증 &amp; 이력
+            </TabsTrigger>
+          </TabsList>
+
+          {/* ═══ Tab 1: 데이터 입력 ═══ */}
+          <TabsContent value="input" className="space-y-6">
           {/* 배출원 정보 + 배출원 목록 */}
           <div className="grid gap-3 md:grid-cols-2 items-stretch">
             {isU7 ? (
@@ -1556,21 +1580,37 @@ export default function Scope3Page() {
             onRequestValidation={handleRequestValidation}
             onSave={handleSaveFromFooter}
           />
+          </TabsContent>
 
-          {/* 하단 카드 2개 */}
-          <div className="grid gap-4 lg:grid-cols-2 items-stretch">
-            <ValidationInsightsCard activityByMonth={currentInputValues} year={year} historicalMonthly={historicalMonthly} />
-            <div className="h-full">
-              <AuditLogTable items={auditLogs} />
+          {/* ═══ Tab 2: API 연동 ═══ */}
+          <TabsContent value="api">
+            <ApiIntegrationPanel
+              scope={3}
+              facilities={scope3Facilities.map((f) => ({ id: f.id, name: f.facilityName, fuel: f.activityType, unit: f.unit }))}
+              selectedFacilityId={selectedFacilityId}
+              onSelectFacility={setSelectedFacilityId}
+              year={year}
+            />
+          </TabsContent>
+
+          {/* ═══ Tab 3: 분석 & 비교 ═══ */}
+          <TabsContent value="analysis">
+            <EmissionTrendCard
+              monthlyTotals={isU7 ? u7MonthlyEmissions : emissions}
+              label="Scope 3"
+            />
+          </TabsContent>
+
+          {/* ═══ Tab 3: 검증 & 이력 ═══ */}
+          <TabsContent value="audit" className="space-y-6">
+            <div className="grid gap-4 lg:grid-cols-2 items-stretch">
+              <ValidationInsightsCard activityByMonth={currentInputValues} year={year} historicalMonthly={historicalMonthly} />
+              <div className="h-full">
+                <AuditLogTable items={auditLogs} />
+              </div>
             </div>
-          </div>
-
-      {/* Emission Trend (Scope 1/2와 동일 스타일) */}
-      <EmissionTrendCard
-        monthlyTotals={isU7 ? u7MonthlyEmissions : emissions}
-        label="Scope 3"
-      />
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <AddActivityModal

@@ -8,7 +8,9 @@ import { EnvironmentAiInsight } from "@/components/environment-data/environment-
 import { EnvironmentFilters } from "@/components/environment-data/environment-filters";
 import { EnvironmentDataTable } from "@/components/environment-data/environment-data-table";
 import { EnvironmentDetailDrawer } from "@/components/environment-data/environment-detail-drawer";
+import { EnvironmentDataEntryModal } from "@/components/environment-data/environment-data-entry-modal";
 import { DataQualityCards } from "@/components/environment-data/data-quality-cards";
+import { CollapsibleSection } from "@/components/common/collapsible-section";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -36,6 +38,7 @@ import type { EnvironmentDataRow, EnvironmentDataDetail } from "@/types/environm
  */
 export default function EnvironmentPage() {
   const [selectedRow, setSelectedRow] = useState<EnvironmentDataRow | null>(null);
+  const [entryModalOpen, setEntryModalOpen] = useState(false);
   const detail: EnvironmentDataDetail | null = useMemo(
     () => (selectedRow ? getDetailById(selectedRow.id) : null),
     [selectedRow]
@@ -52,19 +55,18 @@ export default function EnvironmentPage() {
 
       <div className="mt-8 space-y-8">
         {/* 1. KPI Summary Section */}
-        <section>
-          <h2 className="sr-only">KPI 요약</h2>
+        <CollapsibleSection title="KPI 요약" defaultOpen>
           <EnvironmentKpiCards items={MOCK_ENV_KPI} />
-        </section>
+        </CollapsibleSection>
 
         {/* 2. AI Insight Panel */}
-        <section>
+        <CollapsibleSection title="AI 인사이트" defaultOpen>
           <EnvironmentAiInsight data={MOCK_AI_INSIGHT} />
-        </section>
+        </CollapsibleSection>
 
         {/* 3. Filter Bar */}
         <section>
-          <EnvironmentFilters />
+          <EnvironmentFilters onAddData={() => setEntryModalOpen(true)} />
         </section>
 
         {/* 4. Environment Data Table */}
@@ -87,29 +89,29 @@ export default function EnvironmentPage() {
         )}
 
         {/* 6. Data Quality Section */}
-        <section>
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-            데이터 품질
-          </h2>
+        <CollapsibleSection title="데이터 품질">
           <DataQualityCards items={MOCK_DATA_QUALITY} />
-        </section>
+        </CollapsibleSection>
 
         {/* 7. Trend Analytics Section */}
-        <section>
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-            추이 분석
-          </h2>
+        <CollapsibleSection title="추이 분석">
           <EnvironmentTrendCharts
             monthlyEmissions={MOCK_MONTHLY_EMISSIONS}
             energyTrend={MOCK_ENERGY_TREND}
           />
-        </section>
+        </CollapsibleSection>
 
         {/* 8. Scope 3 Breakdown Section */}
-        <section>
+        <CollapsibleSection title="Scope 3 세부">
           <Scope3Breakdown items={MOCK_SCOPE3_BREAKDOWN} />
-        </section>
+        </CollapsibleSection>
       </div>
+
+      {/* 데이터 입력 모달 */}
+      <EnvironmentDataEntryModal
+        open={entryModalOpen}
+        onClose={() => setEntryModalOpen(false)}
+      />
     </>
   );
 }

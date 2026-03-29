@@ -9,6 +9,7 @@ import { GovernanceFilters } from "@/components/governance-data/governance-filte
 import { GovernanceDataTable } from "@/components/governance-data/governance-data-table";
 import { GovernanceDetailDrawer } from "@/components/governance-data/governance-detail-drawer";
 import { DataQualityCards } from "@/components/environment-data/data-quality-cards";
+import { CollapsibleSection } from "@/components/common/collapsible-section";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -51,22 +52,18 @@ export default function GovernanceDataPage() {
 
       <div className="mt-8 space-y-8">
         {/* 1. KPI Summary Section */}
-        <section>
-          <h2 className="sr-only">KPI 요약</h2>
+        <CollapsibleSection title="KPI 요약" defaultOpen>
           <GovernanceKpiCards items={MOCK_GOV_KPI} />
-        </section>
+        </CollapsibleSection>
 
-        {/* 2. AI Insight Panel */}
-        <section>
+        <CollapsibleSection title="AI 인사이트" defaultOpen>
           <GovernanceAiInsight data={MOCK_GOV_AI_INSIGHT} />
-        </section>
+        </CollapsibleSection>
 
-        {/* 3. Filter Bar */}
         <section>
           <GovernanceFilters />
         </section>
 
-        {/* 4. Data Table */}
         <section>
           <h2 className="mb-3 text-sm font-medium text-muted-foreground">
             거버넌스 데이터 목록
@@ -77,7 +74,6 @@ export default function GovernanceDataPage() {
           />
         </section>
 
-        {/* 5. Detail Drawer */}
         {selectedRow && (
           <GovernanceDetailDrawer
             detail={detail}
@@ -85,26 +81,17 @@ export default function GovernanceDataPage() {
           />
         )}
 
-        {/* 6. Data Quality Section */}
-        <section>
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-            데이터 품질
-          </h2>
+        <CollapsibleSection title="데이터 품질">
           <DataQualityCards items={MOCK_GOV_DATA_QUALITY} />
-        </section>
+        </CollapsibleSection>
 
-        {/* 7. Trend Analytics Section */}
-        <section>
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-            추이 분석
-          </h2>
+        <CollapsibleSection title="추이 분석">
           <GovernanceTrendCharts trend={MOCK_GOV_TREND} />
-        </section>
+        </CollapsibleSection>
 
-        {/* 8. Category Breakdown */}
-        <section>
+        <CollapsibleSection title="카테고리 요약">
           <GovernanceCategoryBreakdown items={MOCK_GOV_CATEGORY_BREAKDOWN} />
-        </section>
+        </CollapsibleSection>
       </div>
     </>
   );

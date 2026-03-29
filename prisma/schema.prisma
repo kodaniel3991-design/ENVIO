@@ -538,3 +538,43 @@ model OrgDuty {
 
   @@map("org_duties")
 }
+
+/// 외부 API 연동 소스 설정
+model IntegrationSource {
+  id           Int              @id @default(autoincrement())
+  name         String           @db.VarChar(100)
+  sourceType   String           @map("source_type") @db.VarChar(50) // kepco, district_heat, emission_engine, supplier_portal, custom
+  scope        Int?             // 1, 2, 3 or null (multi-scope)
+  endpoint     String?          @db.VarChar(500)
+  authType     String           @default("api_key") @map("auth_type") @db.VarChar(30) // api_key, oauth2, basic, none
+  authConfig   String?          @map("auth_config") @db.Text // encrypted JSON: { apiKey, clientId, clientSecret, ... }
+  fieldMapping String?          @map("field_mapping") @db.Text // JSON: { remote_field: local_field }
+  syncInterval Int?             @map("sync_interval") // minutes, null = manual only
+  isActive     Boolean          @default(true) @map("is_active")
+  lastSyncAt   DateTime?        @map("last_sync_at")
+  lastSyncStatus String?        @map("last_sync_status") @db.VarChar(20) // success, error, partial
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @default(now()) @updatedAt @map("updated_at")
+  syncLogs     IntegrationSyncLog[]
+
+  @@map("integration_sources")
+}
+
+/// API 동기화 실행 로그
+model IntegrationSyncLog {
+  id           Int              @id @default(autoincrement())
+  sourceId     Int              @map("source_id")
+  source       IntegrationSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  status       String           @db.VarChar(20) // success, error, partial
+  recordsTotal Int              @default(0) @map("records_total")
+  recordsSaved Int              @default(0) @map("records_saved")
+  recordsFailed Int             @default(0) @map("records_failed")
+  errorMessage String?          @map("error_message") @db.Text
+  detail       String?          @db.Text // JSON: synced facility IDs, months, etc.
+  durationMs   Int?             @map("duration_ms")
+  startedAt    DateTime         @default(now()) @map("started_at")
+  completedAt  DateTime?        @map("completed_at")
+
+  @@index([sourceId, startedAt(sort: Desc)])
+  @@map("integration_sync_logs")
+}

@@ -20,6 +20,9 @@ import { useAuditLogs } from "@/hooks/use-audit-logs";
 import type { Scope2CategoryId, Scope2EnergyType } from "@/types/scope2";
 import { getEmissionFactorForEnergy } from "@/lib/scope2-utils";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { PenLine, BarChart3, ShieldCheck, Plug } from "lucide-react";
+import { ApiIntegrationPanel } from "@/components/integrations/api-integration-panel";
 import { useFacilities, useSaveFacilities, type DbFacilityRow } from "@/hooks/use-facilities";
 import { useActivity, useSaveActivity } from "@/hooks/use-activity";
 import { useScopeEmissionFactors } from "@/hooks/use-emission-factors";
@@ -211,100 +214,139 @@ export default function Scope2Page() {
           onSelect={setSelectedCategoryId}
         />
 
-        <div className="space-y-6">
-          <div className="grid gap-3 md:grid-cols-2 items-stretch">
-            <Scope2SourceInfoCard
-              rows={effectiveFacilities}
-              onRowsChange={setLocalFacilities}
-              selectedId={selectedFacilityId}
-              onSelect={setSelectedFacilityId}
-              onSave={handleSaveFacilities}
-              isSaving={saveFacilitiesMutation.isPending}
-              savedFromDb={!!dbFacilities && dbFacilities.length > 0}
-            />
-            <Scope2SourceExamples activeCategoryId={selectedCategoryId} />
-          </div>
+        <Tabs defaultValue="input" className="space-y-5">
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="input" className="gap-1.5 text-xs">
+              <PenLine className="h-3.5 w-3.5" />
+              데이터 입력
+            </TabsTrigger>
+            <TabsTrigger value="api" className="gap-1.5 text-xs">
+              <Plug className="h-3.5 w-3.5" />
+              API 연동
+            </TabsTrigger>
+            <TabsTrigger value="analysis" className="gap-1.5 text-xs">
+              <BarChart3 className="h-3.5 w-3.5" />
+              분석 &amp; 비교
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="gap-1.5 text-xs">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              검증 &amp; 이력
+            </TabsTrigger>
+          </TabsList>
 
-          <Scope2MonthlyActivityTable
-            key={`${selectedFacilityId}-${year}`}
-            energyType={energyType}
-            unitLabel={selectedFacility?.unit ?? "MWh"}
-            facilityName={selectedFacility?.facilityName || "배출시설 미선택"}
-            facilityId={selectedFacilityId}
-            factorSourceOverride={dbFactor?.source}
-            gasFactorsOverride={dbFactor ? { co2: dbFactor.co2, ch4: dbFactor.ch4, n2o: dbFactor.n2o } : undefined}
-            year={year}
-            activityByMonth={currentActivity}
-            onChangeActivity={handleActivityChange}
-            metaRight={
-              <div className="flex items-center gap-3 text-xs whitespace-nowrap">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">연도</span>
-                  <select
-                    value={year}
-                    onChange={(e) => setYear(e.target.value)}
-                    className="h-8 w-[110px] rounded-md border border-input bg-transparent px-3 py-1 text-xs"
-                  >
-                    {years.map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            }
-            headerRight={
-              <div className="flex items-center gap-3 text-xs whitespace-nowrap">
-                <div className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-1.5 py-0.5">
-                  {(["manual", "excel", "api"] as InputMode[]).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${
-                        inputMode === mode ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
-                      }`}
-                      onClick={() => setInputMode(mode)}
-                    >
-                      {mode === "manual" ? "직접 입력" : mode === "excel" ? "Excel 업로드" : "API 연동"}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="cursor-pointer border-border/70 bg-background text-[11px] text-muted-foreground hover:bg-muted">
-                    Excel 템플릿 다운로드
-                  </Badge>
-                  <Badge variant="secondary" className="cursor-pointer text-[11px]">
-                    Excel 업로드
-                  </Badge>
-                  <button
-                    type="button"
-                    onClick={handleSaveActivity}
-                    disabled={saveActivityMutation.isPending}
-                    className="inline-flex items-center rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                  >
-                    {saveActivityMutation.isPending ? "저장 중..." : "활동량 저장"}
-                  </button>
-                </div>
-              </div>
-            }
-          />
-
-          <ActionFooter
-            year={year}
-            status={dataStatus}
-            hasErrors={hasErrors}
-            onRequestValidation={handleRequestValidation}
-            onSave={handleSaveFromFooter}
-          />
-
-          <div className="grid gap-4 lg:grid-cols-2 items-stretch">
-            <ValidationInsightsCard activityByMonth={currentActivity} year={year} historicalMonthly={historicalMonthly} />
-            <div className="h-full">
-              <AuditLogTable items={auditLogs} />
+          {/* ═══ Tab 1: 데이터 입력 ═══ */}
+          <TabsContent value="input" className="space-y-6">
+            <div className="grid gap-3 md:grid-cols-2 items-stretch">
+              <Scope2SourceInfoCard
+                rows={effectiveFacilities}
+                onRowsChange={setLocalFacilities}
+                selectedId={selectedFacilityId}
+                onSelect={setSelectedFacilityId}
+                onSave={handleSaveFacilities}
+                isSaving={saveFacilitiesMutation.isPending}
+                savedFromDb={!!dbFacilities && dbFacilities.length > 0}
+              />
+              <Scope2SourceExamples activeCategoryId={selectedCategoryId} />
             </div>
-          </div>
 
-          <EmissionTrendCard monthlyTotals={monthlyTotals} />
-        </div>
+            <Scope2MonthlyActivityTable
+              key={`${selectedFacilityId}-${year}`}
+              energyType={energyType}
+              unitLabel={selectedFacility?.unit ?? "MWh"}
+              facilityName={selectedFacility?.facilityName || "배출시설 미선택"}
+              facilityId={selectedFacilityId}
+              factorSourceOverride={dbFactor?.source}
+              gasFactorsOverride={dbFactor ? { co2: dbFactor.co2, ch4: dbFactor.ch4, n2o: dbFactor.n2o } : undefined}
+              year={year}
+              activityByMonth={currentActivity}
+              onChangeActivity={handleActivityChange}
+              metaRight={
+                <div className="flex items-center gap-3 text-xs whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-foreground">연도</span>
+                    <select
+                      value={year}
+                      onChange={(e) => setYear(e.target.value)}
+                      className="h-8 w-[110px] rounded-md border border-input bg-transparent px-3 py-1 text-xs"
+                    >
+                      {years.map((y) => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              }
+              headerRight={
+                <div className="flex items-center gap-3 text-xs whitespace-nowrap">
+                  <div className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background px-1.5 py-0.5">
+                    {(["manual", "excel", "api"] as InputMode[]).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        className={`rounded-full px-3 py-1 text-xs font-medium ${
+                          inputMode === mode ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                        }`}
+                        onClick={() => setInputMode(mode)}
+                      >
+                        {mode === "manual" ? "직접 입력" : mode === "excel" ? "Excel 업로드" : "API 연동"}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="cursor-pointer border-border/70 bg-background text-[11px] text-muted-foreground hover:bg-muted">
+                      Excel 템플릿 다운로드
+                    </Badge>
+                    <Badge variant="secondary" className="cursor-pointer text-[11px]">
+                      Excel 업로드
+                    </Badge>
+                    <button
+                      type="button"
+                      onClick={handleSaveActivity}
+                      disabled={saveActivityMutation.isPending}
+                      className="inline-flex items-center rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      {saveActivityMutation.isPending ? "저장 중..." : "활동량 저장"}
+                    </button>
+                  </div>
+                </div>
+              }
+            />
+
+            <ActionFooter
+              year={year}
+              status={dataStatus}
+              hasErrors={hasErrors}
+              onRequestValidation={handleRequestValidation}
+              onSave={handleSaveFromFooter}
+            />
+          </TabsContent>
+
+          {/* ═══ Tab 2: API 연동 ═══ */}
+          <TabsContent value="api">
+            <ApiIntegrationPanel
+              scope={2}
+              facilities={effectiveFacilities.map((f) => ({ id: f.id, name: f.facilityName, fuel: f.energyType, unit: f.unit }))}
+              selectedFacilityId={selectedFacilityId}
+              onSelectFacility={setSelectedFacilityId}
+              year={year}
+            />
+          </TabsContent>
+
+          {/* ═══ Tab 3: 분석 & 비교 ═══ */}
+          <TabsContent value="analysis">
+            <EmissionTrendCard monthlyTotals={monthlyTotals} label="Scope 2" />
+          </TabsContent>
+
+          {/* ═══ Tab 3: 검증 & 이력 ═══ */}
+          <TabsContent value="audit" className="space-y-6">
+            <div className="grid gap-4 lg:grid-cols-2 items-stretch">
+              <ValidationInsightsCard activityByMonth={currentActivity} year={year} historicalMonthly={historicalMonthly} />
+              <div className="h-full">
+                <AuditLogTable items={auditLogs} />
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

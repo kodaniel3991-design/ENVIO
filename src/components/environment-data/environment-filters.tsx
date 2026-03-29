@@ -10,8 +10,12 @@ import {
 } from "@/components/ui/select";
 import { Search, RotateCcw, Download, Plus } from "lucide-react";
 
+interface EnvironmentFiltersProps {
+  onAddData?: () => void;
+}
+
 /** 필터 바: 연도, 조직, 사업장, Scope, 상태, 출처 + 검색·리셋·Export·Add */
-export function EnvironmentFilters() {
+export function EnvironmentFilters({ onAddData }: EnvironmentFiltersProps) {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => String(currentYear - i));
 
@@ -99,9 +103,9 @@ export function EnvironmentFilters() {
           <Download className="mr-1 h-3.5 w-3.5" />
           Export
         </Button>
-        <Button size="sm">
+        <Button size="sm" onClick={onAddData}>
           <Plus className="mr-1 h-3.5 w-3.5" />
-          Add Data
+          데이터 입력
         </Button>
       </div>
     </div>
