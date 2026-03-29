@@ -204,7 +204,7 @@ function MappingRow({ item }: { item: KpiMappingItem }) {
   const [open, setOpen] = useState(false);
   const CatIcon = CATEGORY_ICONS[item.category] ?? Leaf;
 
-  // 산출 방식 — 로컬 상태 (실제 저장은 PUT /api/kpi/[id]/value)
+  // 산출 방식 — DB 저장 연동
   const isCarbon = item.category === "carbon" || (item.category === "environment" && item.unit === "tCO2e");
   const [calcType, setCalcType] = useState<"auto" | "manual">(isCarbon ? "auto" : "manual");
   const [selectedPreset, setSelectedPreset] = useState(
@@ -217,20 +217,56 @@ function MappingRow({ item }: { item: KpiMappingItem }) {
   );
   const [autoValue, setAutoValue] = useState<number | null>(null);
   const [isCalcing, setIsCalcing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "error">("idle");
+
+  // DB에 calcType + calcRule 저장
+  const saveCalcRule = async (type: "auto" | "manual", presetIdx?: number) => {
+    setIsSaving(true);
+    setSaveStatus("idle");
+    try {
+      const calcRule = type === "auto" && presetIdx != null && presetIdx >= 0
+        ? AUTO_CALC_PRESETS[presetIdx].rule
+        : null;
+      await fetch(`/api/kpi/${item.kpiId}/value`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ calcType: type, calcRule }),
+      });
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch {
+      setSaveStatus("error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleCalcTypeChange = (type: "auto" | "manual") => {
     setCalcType(type);
     setAutoValue(null);
+    saveCalcRule(type, type === "auto" ? selectedPreset : undefined);
+  };
+
+  const handlePresetChange = (idx: number) => {
+    setSelectedPreset(idx);
+    setAutoValue(null);
+    saveCalcRule("auto", idx);
   };
 
   const handlePreviewAutoValue = async () => {
     if (selectedPreset < 0) return;
     setIsCalcing(true);
-    // 시뮬레이션 — 실제 운영에서는 PUT으로 calcRule 저장 후 GET /api/kpi/[id]/value 호출
-    const preset = AUTO_CALC_PRESETS[selectedPreset];
     try {
-      // 임시: 프리셋 기반 예시값 (실제 DB 데이터 기반 계산은 API에서)
-      await new Promise((r) => setTimeout(r, 500));
+      const res = await fetch(`/api/kpi/${item.kpiId}/value?period=${new Date().getFullYear()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAutoValue(data.actualValue ?? 0);
+      } else {
+        const mockVal = item.actual ? Number(item.actual) : 0;
+        setAutoValue(mockVal);
+      }
+    } catch {
       const mockVal = item.actual ? Number(item.actual) : 0;
       setAutoValue(mockVal);
     } finally {
@@ -345,7 +381,7 @@ function MappingRow({ item }: { item: KpiMappingItem }) {
               <div className="flex items-center gap-2 flex-1">
                 <select
                   value={selectedPreset}
-                  onChange={(e) => { setSelectedPreset(Number(e.target.value)); setAutoValue(null); }}
+                  onChange={(e) => handlePresetChange(Number(e.target.value))}
                   onClick={(e) => e.stopPropagation()}
                   className="h-7 rounded-md border border-input bg-transparent px-2 text-xs flex-1 max-w-[200px]"
                 >
@@ -366,6 +402,9 @@ function MappingRow({ item }: { item: KpiMappingItem }) {
                     = {autoValue.toLocaleString("ko-KR")} {item.unit}
                   </span>
                 )}
+                {isSaving && <span className="text-[11px] text-muted-foreground">저장 중...</span>}
+                {saveStatus === "saved" && <span className="text-[11px] text-carbon-success">저장됨 ✓</span>}
+                {saveStatus === "error" && <span className="text-[11px] text-carbon-danger">저장 실패</span>}
               </div>
             )}
           </div>

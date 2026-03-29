@@ -9,6 +9,8 @@ export interface KpiItem {
   description: string;
   reason: string;
   criteria: string;
+  /** 이 KPI를 요구하는 프레임워크 목록 (명시적 선언) */
+  frameworks?: string[];
 }
 
 export interface AiRecommendation {
@@ -117,65 +119,65 @@ export const INDUSTRY_RECOMMENDATIONS: Record<string, AiRecommendation> = {
 export const ALL_KPI: { environmental: KpiItem[]; social: KpiItem[]; governance: KpiItem[] } = {
   environmental: [
     // 탄소/기후
-    { group: "탄소/기후", name: "온실가스 배출량(Scope 1+2)", description: "Scope 1(직접배출) + Scope 2(간접배출) 온실가스 총량", reason: "GHG Protocol 핵심 — 기후 공시의 출발점이자 탄소 감축 전략의 기준 지표", criteria: "tCO2e 단위 측정, 제3자 검증 권장" },
-    { group: "탄소/기후", name: "공급망 탄소(Scope 3)", description: "가치사슬 전반의 간접 온실가스 배출량", reason: "전체 배출의 70~90%를 차지 — GHG Protocol Scope 3 공급망 탄소 핵심 공시", criteria: "15개 카테고리별 산정, GHG Protocol Scope 3 Standard" },
-    { group: "탄소/기후", name: "탄소 집약도", description: "매출·생산량 대비 온실가스 배출 효율 지표", reason: "절대량 외 효율성 파악 및 동종 업계 비교 — GRI·ISSB 탄소 효율 측정 지표", criteria: "tCO2e/억원 또는 tCO2e/생산단위" },
-    { group: "탄소/기후", name: "배출 감축률", description: "기준연도 대비 온실가스 배출 감소 비율", reason: "넷제로 목표 진행도 측정의 핵심 — SBTi·TCFD 기후 목표 이행 진단 지표", criteria: "% 단위, 기준연도 명시 필수" },
-    { group: "탄소/기후", name: "Scope3 카테고리별 배출", description: "15개 Scope3 카테고리 세분화 배출량", reason: "배출 핫스팟 파악 및 감축 우선순위 설정 — GHG Protocol Scope 3 Standard 세분화 공시", criteria: "GHG Protocol Scope 3 Standard 준수" },
-    { group: "탄소/기후", name: "내부 탄소가격 적용 여부", description: "탄소 배출에 내부 비용 부과 여부 및 가격 수준", reason: "투자 의사결정의 탄소비용 내재화 수준 — TCFD·CDP 탄소 가격 책정 핵심 항목", criteria: "₩/tCO2e 단위, 적용 범위 명시" },
-    { group: "탄소/기후", name: "탄소중립 목표", description: "탄소중립(넷제로) 목표 연도 및 감축 경로", reason: "SBTi 과학기반 목표 설정 여부 공시 — TCFD·CDP 넷제로 전략 핵심 공시 항목", criteria: "목표연도·기준연도·감축방법론 명시" },
-    { group: "탄소/기후", name: "탄소중립 목표 달성률", description: "탄소중립 목표 대비 실제 감축 진행률", reason: "기후 목표 이행 모니터링 및 투자자 신뢰 확보 — ISSB·CDP 기후 진행률 공시", criteria: "% 단위, 연간 감축 경로 대비 실적 비교" },
-    { group: "탄소/기후", name: "기후 리스크 영향도", description: "물리적·전환 기후 리스크의 재무적 영향 평가", reason: "물리적·전환 리스크의 재무 영향 정량화 — TCFD·CSRD ESRS E1 핵심 공시 항목", criteria: "고·중·저 리스크 분류 및 금액 추정" },
-    { group: "탄소/기후", name: "기후 기회(Opportunity)", description: "기후변화 관련 사업 기회 식별 및 규모", reason: "리스크뿐 아니라 기회 측면 공시 요구 — TCFD·ISSB 기후 기회 공시 핵심 항목", criteria: "기회 유형(제품·시장·자원효율 등) 및 잠재 규모" },
+    { group: "탄소/기후", name: "온실가스 배출량(Scope 1+2)", description: "Scope 1+2 온실가스 총량", reason: "GHG Protocol 핵심 — 기후 공시의 출발점이자 탄소 감축 전략의 기준 지표", criteria: "tCO2e 단위 측정, 제3자 검증 권장", frameworks: ["GRI", "ISSB", "CDP", "TCFD"] },
+    { group: "탄소/기후", name: "공급망 탄소(Scope 3)", description: "가치사슬 간접 온실가스 배출량", reason: "전체 배출의 70~90%를 차지 — GHG Protocol Scope 3 공급망 탄소 핵심 공시", criteria: "15개 카테고리별 산정, GHG Protocol Scope 3 Standard", frameworks: ["GRI", "ISSB", "CDP"] },
+    { group: "탄소/기후", name: "탄소 집약도", description: "매출 대비 온실가스 배출 효율", reason: "절대량 외 효율성 파악 및 동종 업계 비교 — GRI·ISSB 탄소 효율 측정 지표", criteria: "tCO2e/억원 또는 tCO2e/생산단위", frameworks: ["GRI", "ISSB"] },
+    { group: "탄소/기후", name: "배출 감축률", description: "기준연도 대비 배출 감소 비율", reason: "넷제로 목표 진행도 측정의 핵심 — SBTi·TCFD 기후 목표 이행 진단 지표", criteria: "% 단위, 기준연도 명시 필수", frameworks: ["GRI", "ISSB", "CDP", "TCFD"] },
+    { group: "탄소/기후", name: "Scope3 카테고리별 배출", description: "15개 Scope3 카테고리 세분화 배출량", reason: "배출 핫스팟 파악 및 감축 우선순위 설정 — GHG Protocol Scope 3 Standard 세분화 공시", criteria: "GHG Protocol Scope 3 Standard 준수", frameworks: ["GRI", "CDP"] },
+    { group: "탄소/기후", name: "내부 탄소가격 적용 여부", description: "내부 탄소 비용 부과 여부 및 가격", reason: "투자 의사결정의 탄소비용 내재화 수준 — TCFD·CDP 탄소 가격 책정 핵심 항목", criteria: "₩/tCO2e 단위, 적용 범위 명시", frameworks: ["TCFD", "CDP"] },
+    { group: "탄소/기후", name: "탄소중립 목표", description: "넷제로 목표 연도 및 감축 경로", reason: "SBTi 과학기반 목표 설정 여부 공시 — TCFD·CDP 넷제로 전략 핵심 공시 항목", criteria: "목표연도·기준연도·감축방법론 명시", frameworks: ["ISSB", "CDP", "TCFD"] },
+    { group: "탄소/기후", name: "탄소중립 목표 달성률", description: "넷제로 목표 대비 감축 진행률", reason: "기후 목표 이행 모니터링 및 투자자 신뢰 확보 — ISSB·CDP 기후 진행률 공시", criteria: "% 단위, 연간 감축 경로 대비 실적 비교", frameworks: ["ISSB", "CDP"] },
+    { group: "탄소/기후", name: "기후 리스크 영향도", description: "기후 리스크의 재무적 영향 평가", reason: "물리적·전환 리스크의 재무 영향 정량화 — TCFD·CSRD ESRS E1 핵심 공시 항목", criteria: "고·중·저 리스크 분류 및 금액 추정", frameworks: ["ISSB", "TCFD"] },
+    { group: "탄소/기후", name: "기후 기회(Opportunity)", description: "기후변화 관련 사업 기회 식별", reason: "리스크뿐 아니라 기회 측면 공시 요구 — TCFD·ISSB 기후 기회 공시 핵심 항목", criteria: "기회 유형(제품·시장·자원효율 등) 및 잠재 규모", frameworks: ["ISSB", "TCFD"] },
     // 에너지
-    { group: "에너지", name: "총 에너지 사용량", description: "모든 에너지원(전력·연료·열 등) 총 소비량", reason: "에너지 관리의 기본 지표 — GRI 302·CSRD ESRS E1 에너지 소비 기본 공시", criteria: "GJ 또는 MWh 단위, 에너지원별 구분" },
-    { group: "에너지", name: "에너지 집약도", description: "매출·생산량 대비 에너지 소비 효율", reason: "에너지 효율 개선 추이 파악 및 산업 내 비교 — GRI 302 에너지 원단위 지표", criteria: "GJ/억원 또는 GJ/생산단위" },
-    { group: "에너지", name: "재생에너지 사용량", description: "태양광·풍력 등 재생에너지 소비량", reason: "RE100 이행 및 Scope2 감축의 핵심 — GRI 302·CDP 재생에너지 전환 공시 항목", criteria: "GWh 단위, 에너지원별 구분" },
-    { group: "에너지", name: "재생에너지 비율", description: "총 에너지 중 재생에너지 비중", reason: "RE100 목표 달성률 모니터링 — GRI 302·ISSB 재생에너지 전환 진행도 지표", criteria: "% 단위, 연도별 목표 병기 권장" },
-    { group: "에너지", name: "에너지 절감량", description: "효율화 활동을 통한 에너지 절감 실적", reason: "에너지 절감 투자의 효과 측정 — GRI 302-4 에너지 절약 활동 성과 공시", criteria: "GJ 또는 MWh, 절감 활동별 구분" },
-    { group: "에너지", name: "에너지 효율", description: "생산단위당 에너지 소비 개선률", reason: "효율화 프로그램 성과의 수치적 측정 — GRI 302 에너지 원단위 개선률 지표", criteria: "% 개선율 또는 에너지원단위" },
-    { group: "에너지", name: "에너지 비용", description: "에너지 구매에 지출된 총 비용", reason: "에너지 가격 리스크의 재무적 영향 파악 — ISSB·TCFD 재무 리스크 연계 지표", criteria: "백만원 단위, 에너지원별 구분" },
+    { group: "에너지", name: "총 에너지 사용량", description: "전력·연료·열 등 총 소비량", reason: "에너지 관리의 기본 지표 — GRI 302·CSRD ESRS E1 에너지 소비 기본 공시", criteria: "GJ 또는 MWh 단위, 에너지원별 구분", frameworks: ["GRI", "ISSB", "CDP"] },
+    { group: "에너지", name: "에너지 집약도", description: "매출 대비 에너지 소비 효율", reason: "에너지 효율 개선 추이 파악 및 산업 내 비교 — GRI 302 에너지 원단위 지표", criteria: "GJ/억원 또는 GJ/생산단위", frameworks: ["GRI", "ISSB"] },
+    { group: "에너지", name: "재생에너지 사용량", description: "태양광·풍력 등 재생에너지 소비량", reason: "RE100 이행 및 Scope2 감축의 핵심 — GRI 302·CDP 재생에너지 전환 공시 항목", criteria: "GWh 단위, 에너지원별 구분", frameworks: ["GRI", "CDP"] },
+    { group: "에너지", name: "재생에너지 비율", description: "총 에너지 중 재생에너지 비중", reason: "RE100 목표 달성률 모니터링 — GRI 302·ISSB 재생에너지 전환 진행도 지표", criteria: "% 단위, 연도별 목표 병기 권장", frameworks: ["GRI", "ISSB", "CDP"] },
+    { group: "에너지", name: "에너지 절감량", description: "효율화 활동 에너지 절감 실적", reason: "에너지 절감 투자의 효과 측정 — GRI 302-4 에너지 절약 활동 성과 공시", criteria: "GJ 또는 MWh, 절감 활동별 구분", frameworks: ["GRI"] },
+    { group: "에너지", name: "에너지 효율", description: "생산단위당 에너지 소비 개선률", reason: "효율화 프로그램 성과의 수치적 측정 — GRI 302 에너지 원단위 개선률 지표", criteria: "% 개선율 또는 에너지원단위", frameworks: ["GRI"] },
+    { group: "에너지", name: "에너지 비용", description: "에너지 구매 총 비용", reason: "에너지 가격 리스크의 재무적 영향 파악 — ISSB·TCFD 재무 리스크 연계 지표", criteria: "백만원 단위, 에너지원별 구분", frameworks: ["ISSB", "TCFD"] },
     // 수자원
-    { group: "수자원", name: "용수 사용량", description: "지하수·상수도·재이용수 등 총 취수량", reason: "수자원 관리의 기본 지표 — GRI 303·CSRD ESRS E3 취수량 기본 공시 항목", criteria: "m³ 단위, 수원별 구분" },
-    { group: "수자원", name: "수자원 집약도", description: "매출·생산량 대비 용수 사용 효율", reason: "수자원 효율화 추이 파악 및 산업 내 비교 — GRI 303 수자원 원단위 지표", criteria: "m³/억원 또는 m³/생산단위" },
-    { group: "수자원", name: "수자원 재사용률", description: "총 용수 중 재이용·순환 사용 비율", reason: "취수 저감 및 순환경제 기여도 측정 — GRI 303 재이용수 활용 공시 항목", criteria: "% 단위" },
-    { group: "수자원", name: "고위험 지역 수자원 사용량", description: "물 부족·스트레스 지역에서의 취수량", reason: "WRI Aqueduct 기반 물 스트레스 리스크 평가 — CDP Water 핵심 공시 항목", criteria: "m³, 위험 지역 비율 함께 공시" },
-    { group: "수자원", name: "수질 오염 배출량", description: "방류 수질 오염물질(COD·SS·질소·인 등) 총량", reason: "수계 환경 영향 최소화 요구 — GRI 303·CSRD ESRS E3 수질 오염 배출 공시", criteria: "mg/L 및 총량(ton) 단위" },
+    { group: "수자원", name: "용수 사용량", description: "총 취수량(지하수·상수도 등)", reason: "수자원 관리의 기본 지표 — GRI 303·CSRD ESRS E3 취수량 기본 공시 항목", criteria: "m³ 단위, 수원별 구분", frameworks: ["GRI", "CDP"] },
+    { group: "수자원", name: "수자원 집약도", description: "매출 대비 용수 사용 효율", reason: "수자원 효율화 추이 파악 및 산업 내 비교 — GRI 303 수자원 원단위 지표", criteria: "m³/억원 또는 m³/생산단위", frameworks: ["GRI"] },
+    { group: "수자원", name: "수자원 재사용률", description: "용수 재이용·순환 사용 비율", reason: "취수 저감 및 순환경제 기여도 측정 — GRI 303 재이용수 활용 공시 항목", criteria: "% 단위", frameworks: ["GRI"] },
+    { group: "수자원", name: "고위험 지역 수자원 사용량", description: "물 부족 지역 취수량", reason: "WRI Aqueduct 기반 물 스트레스 리스크 평가 — CDP Water 핵심 공시 항목", criteria: "m³, 위험 지역 비율 함께 공시", frameworks: ["CDP"] },
+    { group: "수자원", name: "수질 오염 배출량", description: "방류 수질 오염물질 총량", reason: "수계 환경 영향 최소화 요구 — GRI 303·CSRD ESRS E3 수질 오염 배출 공시", criteria: "mg/L 및 총량(ton) 단위", frameworks: ["GRI"] },
     // 폐기물
-    { group: "폐기물", name: "폐기물 발생량", description: "사업장에서 발생한 총 폐기물 양", reason: "폐기물 관리의 기본 지표 — GRI 306·CSRD ESRS E5 폐기물 발생 기본 공시", criteria: "ton 단위, 유해/일반 구분" },
-    { group: "폐기물", name: "폐기물 재활용률", description: "총 폐기물 중 재활용·재사용된 비율", reason: "순환경제 기여도 측정 — GRI 306 폐기물 처리 방식 및 재활용 비율 공시", criteria: "% 단위" },
-    { group: "폐기물", name: "유해 폐기물 비율", description: "총 폐기물 중 지정폐기물 비율", reason: "환경·안전 리스크 관리의 핵심 — GRI 306 유해 폐기물 별도 공시 요구 항목", criteria: "% 및 절대량(ton)" },
-    { group: "폐기물", name: "폐기물 처리 방식별 비율", description: "매립·소각·재활용·에너지회수 등 처리방식 구성", reason: "처리 방식 개선 추이 파악 — GRI 306 폐기물 처리 경로별 구분 공시 항목", criteria: "% 구성비, 방식별 절대량" },
-    { group: "폐기물", name: "폐기물 감축률", description: "기준연도 대비 폐기물 발생 감소율", reason: "폐기물 감축 목표 달성 모니터링 — GRI 306·CSRD ESRS E5 폐기물 감축 이행 지표", criteria: "% 단위, 기준연도 명시" },
-    { group: "폐기물", name: "순환자원 사용 비율", description: "원부자재 중 재생·순환 소재 사용 비율", reason: "순환경제 전환 정도 측정 — CSRD ESRS E5 순환경제 핵심 공시 항목", criteria: "% 단위, 소재 유형별 구분" },
+    { group: "폐기물", name: "폐기물 발생량", description: "사업장 총 폐기물 양", reason: "폐기물 관리의 기본 지표 — GRI 306·CSRD ESRS E5 폐기물 발생 기본 공시", criteria: "ton 단위, 유해/일반 구분", frameworks: ["GRI", "CDP"] },
+    { group: "폐기물", name: "폐기물 재활용률", description: "폐기물 중 재활용 비율", reason: "순환경제 기여도 측정 — GRI 306 폐기물 처리 방식 및 재활용 비율 공시", criteria: "% 단위", frameworks: ["GRI"] },
+    { group: "폐기물", name: "유해 폐기물 비율", description: "총 폐기물 중 지정폐기물 비율", reason: "환경·안전 리스크 관리의 핵심 — GRI 306 유해 폐기물 별도 공시 요구 항목", criteria: "% 및 절대량(ton)", frameworks: ["GRI"] },
+    { group: "폐기물", name: "폐기물 처리 방식별 비율", description: "매립·소각·재활용 등 처리 구성", reason: "처리 방식 개선 추이 파악 — GRI 306 폐기물 처리 경로별 구분 공시 항목", criteria: "% 구성비, 방식별 절대량", frameworks: ["GRI"] },
+    { group: "폐기물", name: "폐기물 감축률", description: "기준연도 대비 발생 감소율", reason: "폐기물 감축 목표 달성 모니터링 — GRI 306·CSRD ESRS E5 폐기물 감축 이행 지표", criteria: "% 단위, 기준연도 명시", frameworks: ["GRI"] },
+    { group: "폐기물", name: "순환자원 사용 비율", description: "재생·순환 소재 사용 비율", reason: "순환경제 전환 정도 측정 — CSRD ESRS E5 순환경제 핵심 공시 항목", criteria: "% 단위, 소재 유형별 구분" },
     // 오염/환경 영향
-    { group: "오염/환경 영향", name: "대기오염물질 배출", description: "NOx·SOx·먼지 등 대기오염물질 배출량", reason: "지역 대기질 영향 관리 — GRI 305·CSRD ESRS E2 대기오염 물질 공시 항목", criteria: "ton 단위, 물질별 구분" },
-    { group: "오염/환경 영향", name: "총 대기오염 배출량", description: "모든 대기오염물질의 통합 배출량", reason: "통합 대기 관리 수준 측정 — GRI 305 대기오염 통합 공시 지표", criteria: "ton, 물질별 합산 또는 CO2eq" },
-    { group: "오염/환경 영향", name: "오염물질 초과 배출 건수", description: "법적 허용 기준 초과 배출 발생 횟수", reason: "환경 법규 준수 현황 모니터링 — GRI 307 환경 컴플라이언스 핵심 지표", criteria: "건수, 초과 사유 및 조치 내역 포함" },
-    { group: "오염/환경 영향", name: "토양/수질 오염 사고 건수", description: "유해물질 누출 등 토양·수질 오염 사고 발생 수", reason: "환경 사고 예방 및 관리 수준 측정 — GRI 306·307 환경 사고 공시 항목", criteria: "건수, 피해 규모 및 복구 현황" },
-    { group: "오염/환경 영향", name: "환경 민원 건수", description: "사업장 주변 주민 등의 환경 관련 민원 접수 건수", reason: "지역사회 환경 영향 및 소통 수준 파악 — GRI 413 지역사회 영향 관리 지표", criteria: "건수, 유형별 구분 및 해결률" },
+    { group: "오염/환경 영향", name: "대기오염물질 배출", description: "NOx·SOx·먼지 등 배출량", reason: "지역 대기질 영향 관리 — GRI 305·CSRD ESRS E2 대기오염 물질 공시 항목", criteria: "ton 단위, 물질별 구분", frameworks: ["GRI"] },
+    { group: "오염/환경 영향", name: "총 대기오염 배출량", description: "대기오염물질 통합 배출량", reason: "통합 대기 관리 수준 측정 — GRI 305 대기오염 통합 공시 지표", criteria: "ton, 물질별 합산 또는 CO2eq", frameworks: ["GRI"] },
+    { group: "오염/환경 영향", name: "오염물질 초과 배출 건수", description: "법적 기준 초과 배출 횟수", reason: "환경 법규 준수 현황 모니터링 — GRI 307 환경 컴플라이언스 핵심 지표", criteria: "건수, 초과 사유 및 조치 내역 포함", frameworks: ["GRI"] },
+    { group: "오염/환경 영향", name: "토양/수질 오염 사고 건수", description: "토양·수질 오염 사고 발생 수", reason: "환경 사고 예방 및 관리 수준 측정 — GRI 306·307 환경 사고 공시 항목", criteria: "건수, 피해 규모 및 복구 현황", frameworks: ["GRI"] },
+    { group: "오염/환경 영향", name: "환경 민원 건수", description: "환경 관련 민원 접수 건수", reason: "지역사회 환경 영향 및 소통 수준 파악 — GRI 413 지역사회 영향 관리 지표", criteria: "건수, 유형별 구분 및 해결률", frameworks: ["GRI"] },
     // 환경 리스크/컴플라이언스
-    { group: "환경 리스크/컴플라이언스", name: "환경 사고 건수", description: "환경 오염을 유발한 사고 발생 횟수", reason: "환경 관리 시스템 실효성 평가 — GRI 307 환경 사고 발생 공시 핵심 항목", criteria: "건수, 중대사고 별도 구분" },
-    { group: "환경 리스크/컴플라이언스", name: "환경 벌금 금액", description: "환경 법규 위반으로 부과된 벌금·과태료 총액", reason: "환경 규제 리스크의 재무적 영향 측정 — GRI 307 환경 부과금 공시 항목", criteria: "백만원 단위, 위반 유형 포함" },
-    { group: "환경 리스크/컴플라이언스", name: "환경 법규 위반 건수", description: "환경 관련 법규 위반으로 행정처분을 받은 건수", reason: "환경 법적 리스크 관리 수준 파악 — GRI 307 환경 법규 위반 핵심 공시 항목", criteria: "건수, 처분 유형 구분" },
-    { group: "환경 리스크/컴플라이언스", name: "환경 리스크 평가 수행 여부", description: "환경 리스크 평가 프로세스 운영 여부 및 주기", reason: "선제적 환경 리스크 관리 역량 확인 — TCFD·CSRD ESRS E1 환경 리스크 평가 요구", criteria: "수행 여부(Y/N), 평가 주기 및 대상 범위" },
+    { group: "환경 리스크/컴플라이언스", name: "환경 사고 건수", description: "환경 오염 사고 발생 횟수", reason: "환경 관리 시스템 실효성 평가 — GRI 307 환경 사고 발생 공시 핵심 항목", criteria: "건수, 중대사고 별도 구분", frameworks: ["GRI"] },
+    { group: "환경 리스크/컴플라이언스", name: "환경 벌금 금액", description: "환경 법규 위반 벌금·과태료 총액", reason: "환경 규제 리스크의 재무적 영향 측정 — GRI 307 환경 부과금 공시 항목", criteria: "백만원 단위, 위반 유형 포함", frameworks: ["GRI"] },
+    { group: "환경 리스크/컴플라이언스", name: "환경 법규 위반 건수", description: "환경 법규 위반 행정처분 건수", reason: "환경 법적 리스크 관리 수준 파악 — GRI 307 환경 법규 위반 핵심 공시 항목", criteria: "건수, 처분 유형 구분", frameworks: ["GRI"] },
+    { group: "환경 리스크/컴플라이언스", name: "환경 리스크 평가 수행 여부", description: "환경 리스크 평가 운영 여부", reason: "선제적 환경 리스크 관리 역량 확인 — TCFD·CSRD ESRS E1 환경 리스크 평가 요구", criteria: "수행 여부(Y/N), 평가 주기 및 대상 범위", frameworks: ["TCFD"] },
     // 제품/공급망
-    { group: "제품/공급망", name: "친환경 제품 매출 비율", description: "총 매출 중 친환경 인증·저탄소 제품의 비중", reason: "녹색 전환 사업 포트폴리오 측정 — EU 택소노미·CSRD 녹색 매출 공시 핵심 항목", criteria: "% 단위, 인증 기준 명시" },
-    { group: "제품/공급망", name: "제품 탄소발자국", description: "제품 생산부터 폐기까지 전 과정 온실가스 배출량", reason: "LCA 기반 제품 환경영향 관리 — ISO 14067·CSRD 제품 탄소 공시 핵심 항목", criteria: "tCO2e/제품단위, ISO 14067 기준" },
-    { group: "제품/공급망", name: "공급망 탄소 배출량", description: "주요 협력사 온실가스 배출량(Scope3 Cat.1)", reason: "공급망 탈탄소화 이행 수준 측정 — GHG Protocol Scope 3 Cat.1 핵심 공시", criteria: "tCO2e, 주요 협력사 커버리지 비율" },
-    { group: "제품/공급망", name: "공급망 환경 평가율", description: "환경 평가를 받은 공급업체 비율", reason: "공급망 환경 리스크 관리 수준 파악 — EcoVadis·GRI 414 공급망 환경 평가 지표", criteria: "% 단위, 평가 기준 및 방법론 명시" },
+    { group: "제품/공급망", name: "친환경 제품 매출 비율", description: "친환경 인증 제품 매출 비중", reason: "녹색 전환 사업 포트폴리오 측정 — EU 택소노미·CSRD 녹색 매출 공시 핵심 항목", criteria: "% 단위, 인증 기준 명시" },
+    { group: "제품/공급망", name: "제품 탄소발자국", description: "제품 전 과정 온실가스 배출량", reason: "LCA 기반 제품 환경영향 관리 — ISO 14067·CSRD 제품 탄소 공시 핵심 항목", criteria: "tCO2e/제품단위, ISO 14067 기준" },
+    { group: "제품/공급망", name: "공급망 탄소 배출량", description: "주요 협력사 온실가스 배출량", reason: "공급망 탈탄소화 이행 수준 측정 — GHG Protocol Scope 3 Cat.1 핵심 공시", criteria: "tCO2e, 주요 협력사 커버리지 비율", frameworks: ["GRI", "CDP"] },
+    { group: "제품/공급망", name: "공급망 환경 평가율", description: "환경 평가 받은 공급업체 비율", reason: "공급망 환경 리스크 관리 수준 파악 — EcoVadis·GRI 414 공급망 환경 평가 지표", criteria: "% 단위, 평가 기준 및 방법론 명시", frameworks: ["GRI"] },
     // 기타
-    { group: "기타", name: "녹색건물 인증", description: "친환경 인증을 받은 건물 비율 또는 건수", reason: "부동산 자산의 환경 품질 관리 — GRI·LEED·BREEAM 자산 환경 성능 공시 지표", criteria: "인증 건수 및 비율, 인증 등급 구분" },
-    { group: "기타", name: "생물다양성 영향", description: "사업장 주변 생태계 및 생물다양성에 미치는 영향", reason: "TNFD 프레임워크 대응 핵심 지표 — GRI 304·CSRD ESRS E4 생물다양성 공시 항목", criteria: "고위험 사업장 비율, 생태계 복원 활동" },
+    { group: "기타", name: "녹색건물 인증", description: "친환경 인증 건물 비율·건수", reason: "부동산 자산의 환경 품질 관리 — GRI·LEED·BREEAM 자산 환경 성능 공시 지표", criteria: "인증 건수 및 비율, 인증 등급 구분", frameworks: ["GRI"] },
+    { group: "기타", name: "생물다양성 영향", description: "사업장 생태계 영향 평가", reason: "TNFD 프레임워크 대응 핵심 지표 — GRI 304·CSRD ESRS E4 생물다양성 공시 항목", criteria: "고위험 사업장 비율, 생태계 복원 활동", frameworks: ["GRI"] },
   ],
   social: [
     // 노동/안전
-    { group: "노동/안전", name: "산업재해율", description: "근로자 1만명당 산업재해 발생 건수 및 비율", reason: "GRI 403·CSRD·SASB 핵심 — 산업안전보건의 법적 기준 준수 지표", criteria: "GRI, CSRD, SASB" },
-    { group: "노동/안전", name: "직업병 발생률", description: "직업성 질환 발생 건수 비율", reason: "CSRD ESRS S1 요구 — 장기 만성 직업성 질환 리스크 관리 수준 측정", criteria: "CSRD" },
-    { group: "노동/안전", name: "사망 사고 건수", description: "업무상 사망자 수", reason: "GRI·CSRD·SASB 최우선 지표 — 중대재해처벌법 대응의 핵심 공시 항목", criteria: "GRI, CSRD, SASB" },
-    { group: "노동/안전", name: "LTIFR", description: "손실시간 사고율 (Lost Time Injury Frequency Rate)", reason: "글로벌 산업 안전 비교 표준 — 손실시간 기반 사고율로 SASB 요구", criteria: "SASB" },
-    { group: "노동/안전", name: "근로손실일수", description: "사고로 인한 근로 손실 일수", reason: "사고의 실질적 심각도 측정 — GRI 403 공시 핵심 항목", criteria: "GRI" },
-    { group: "노동/안전", name: "안전교육 이수율", description: "안전 교육 완료 비율", reason: "사고 예방의 선행 지표 — EcoVadis 안전 관리 평가 핵심 항목", criteria: "EcoVadis" },
+    { group: "노동/안전", name: "산업재해율", description: "근로자 1만명당 산업재해 발생 건수 및 비율", reason: "GRI 403·CSRD·SASB 핵심 — 산업안전보건의 법적 기준 준수 지표", criteria: "GRI, CSRD, SASB", frameworks: ["GRI", "ISSB"] },
+    { group: "노동/안전", name: "직업병 발생률", description: "직업성 질환 발생 건수 비율", reason: "CSRD ESRS S1 요구 — 장기 만성 직업성 질환 리스크 관리 수준 측정", criteria: "CSRD", frameworks: ["GRI"] },
+    { group: "노동/안전", name: "사망 사고 건수", description: "업무상 사망자 수", reason: "GRI·CSRD·SASB 최우선 지표 — 중대재해처벌법 대응의 핵심 공시 항목", criteria: "GRI, CSRD, SASB", frameworks: ["GRI", "ISSB"] },
+    { group: "노동/안전", name: "LTIFR", description: "손실시간 사고율 (Lost Time Injury Frequency Rate)", reason: "글로벌 산업 안전 비교 표준 — 손실시간 기반 사고율로 SASB 요구", criteria: "SASB", frameworks: ["GRI"] },
+    { group: "노동/안전", name: "근로손실일수", description: "사고로 인한 근로 손실 일수", reason: "사고의 실질적 심각도 측정 — GRI 403 공시 핵심 항목", criteria: "GRI", frameworks: ["GRI"] },
+    { group: "노동/안전", name: "안전교육 이수율", description: "안전 교육 완료 비율", reason: "사고 예방의 선행 지표 — EcoVadis 안전 관리 평가 핵심 항목", criteria: "EcoVadis", frameworks: ["GRI"] },
     { group: "노동/안전", name: "안전 점검 수행률", description: "정기 안전 점검 수행 수준", reason: "예방적 안전 관리 실행력 측정 — EcoVadis 현장 관리 평가", criteria: "EcoVadis" },
     { group: "노동/안전", name: "직업건강 관리 프로그램 여부", description: "건강관리 체계 운영 여부", reason: "임직원 건강 보호 체계 구비 여부 — K-ESG 사회 항목 핵심", criteria: "K-ESG" },
     // 인사/고용
@@ -304,8 +306,14 @@ export function getKpiRecommendationsByFrameworks(
   selectedFrameworks: string[]
 ): { environmental: string[]; social: string[]; governance: string[] } {
   if (selectedFrameworks.length === 0) return { environmental: [], social: [], governance: [] };
-  const matches = (item: KpiItem) =>
-    selectedFrameworks.some((fw) => item.criteria.includes(fw) || item.reason.includes(fw));
+  const matches = (item: KpiItem) => {
+    // 1. frameworks 배열이 있으면 명시적 매칭 (우선)
+    if (item.frameworks && item.frameworks.length > 0) {
+      return selectedFrameworks.some((fw) => item.frameworks!.includes(fw));
+    }
+    // 2. fallback: 텍스트 매칭
+    return selectedFrameworks.some((fw) => item.criteria.includes(fw) || item.reason.includes(fw));
+  };
   return {
     environmental: ALL_KPI.environmental.filter(matches).map((k) => k.name),
     social: ALL_KPI.social.filter(matches).map((k) => k.name),
@@ -315,7 +323,12 @@ export function getKpiRecommendationsByFrameworks(
 
 /** KpiItem 하나에 대해 매칭되는 프레임워크 목록 반환 */
 export function getMatchingFrameworks(item: KpiItem, selectedFrameworks: string[]): string[] {
-  return selectedFrameworks.filter((fw) => item.criteria.includes(fw) || item.reason.includes(fw));
+  return selectedFrameworks.filter((fw) => {
+    if (item.frameworks && item.frameworks.length > 0) {
+      return item.frameworks.includes(fw);
+    }
+    return item.criteria.includes(fw) || item.reason.includes(fw);
+  });
 }
 
 export const SCOPE3_GROUPS = [

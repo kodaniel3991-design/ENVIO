@@ -1,6 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // dev 환경에서 브라우저 캐시로 인한 404 chunk 에러 방지
+  async headers() {
+    if (process.env.NODE_ENV !== "production") {
+      return [
+        {
+          source: "/_next/static/:path*",
+          headers: [
+            { key: "Cache-Control", value: "no-store, must-revalidate" },
+          ],
+        },
+      ];
+    }
+    return [];
+  },
   async redirects() {
     return [
       { source: "/", destination: "/dashboard", permanent: false },

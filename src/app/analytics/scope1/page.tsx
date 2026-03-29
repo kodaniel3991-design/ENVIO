@@ -407,7 +407,7 @@ export default function Scope1Page() {
 
           {/* ═══ Tab 1: 데이터 입력 ═══ */}
           <TabsContent value="input" className="space-y-6">
-            <div className="grid gap-3 md:grid-cols-2 items-stretch">
+            <div className="grid gap-3 lg:grid-cols-[1fr,440px] items-start">
               <SourceInfoCard
                 rows={effectiveFacilities}
                 onRowsChange={setLocalFacilities}
@@ -416,17 +416,9 @@ export default function Scope1Page() {
                 onSelect={setSelectedFacilityId}
                 onSave={handleSaveFacilities}
                 isSaving={saveFacilitiesMutation.isPending}
+                getEmissionFactor={(fuel) => getDbFactor(fuel as any)?.combined}
               />
-              <SourceReference
-                activeCategoryId={selectedCategoryId}
-                facilities={effectiveFacilities.map((f) => ({
-                  id: f.id,
-                  name: f.facilityName,
-                  fuel: f.fuelName,
-                  unit: f.unit,
-                  emissionFactor: getDbFactor(f.fuelName as any)?.combined,
-                }))}
-              />
+              <SourceReference activeCategoryId={selectedCategoryId} />
             </div>
 
             <MonthlyActivityTable

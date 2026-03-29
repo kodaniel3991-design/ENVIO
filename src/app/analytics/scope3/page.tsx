@@ -1210,8 +1210,8 @@ export default function Scope3Page() {
 
           {/* ═══ Tab 1: 데이터 입력 ═══ */}
           <TabsContent value="input" className="space-y-6">
-          {/* 배출원 정보 + 배출원 목록 */}
-          <div className="grid gap-3 md:grid-cols-2 items-stretch">
+          {/* 배출원 정보 + 가이드 */}
+          <div className="grid gap-3 lg:grid-cols-[1fr,440px] items-start">
             {isU7 ? (
               <U7SourceInfoCard
                 rows={localU7Facilities}
@@ -1234,15 +1234,7 @@ export default function Scope3Page() {
                 savedFromDb={!!dbScope3Facilities && dbScope3Facilities.length > 0}
               />
             )}
-            <Scope3SourceReference
-              activeCategoryId={selectedCategoryId}
-              facilities={scope3Facilities.map((f) => ({
-                id: f.id,
-                name: f.facilityName,
-                activityType: f.activityType,
-                unit: f.unit,
-              }))}
-            />
+            <Scope3SourceReference activeCategoryId={selectedCategoryId} />
           </div>
 
           {/* 월별 입력 영역 */}

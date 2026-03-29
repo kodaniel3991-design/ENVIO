@@ -259,7 +259,7 @@ export default function Scope2Page() {
 
           {/* ═══ Tab 1: 데이터 입력 ═══ */}
           <TabsContent value="input" className="space-y-6">
-            <div className="grid gap-3 md:grid-cols-2 items-stretch">
+            <div className="grid gap-3 lg:grid-cols-[1fr,440px] items-start">
               <Scope2SourceInfoCard
                 rows={effectiveFacilities}
                 onRowsChange={setLocalFacilities}
@@ -268,17 +268,9 @@ export default function Scope2Page() {
                 onSave={handleSaveFacilities}
                 isSaving={saveFacilitiesMutation.isPending}
                 savedFromDb={!!dbFacilities && dbFacilities.length > 0}
+                getEmissionFactor={(energy) => getDbFactor(energy as any)?.combined}
               />
-              <Scope2SourceExamples
-                activeCategoryId={selectedCategoryId}
-                facilities={effectiveFacilities.map((f) => ({
-                  id: f.id,
-                  name: f.facilityName,
-                  energyType: f.energyType,
-                  unit: f.unit,
-                  emissionFactor: getDbFactor(f.energyType as any)?.combined,
-                }))}
-              />
+              <Scope2SourceExamples activeCategoryId={selectedCategoryId} />
             </div>
 
             <Scope2MonthlyActivityTable

@@ -24,24 +24,12 @@ function genId() {
 }
 
 export const INITIAL_FACILITY_ROWS_BY_CATEGORY: Record<string, FacilityRow[]> = {
-  fixed: [
-    { id: "f-1", facilityName: "보일러", fuelName: "LNG", unit: "Nm3", dataMethod: "청구서" },
-    { id: "f-2", facilityName: "발전기", fuelName: "Diesel", unit: "L", dataMethod: "구매영수증" },
-    { id: "f-3", facilityName: "용해로", fuelName: "LNG", unit: "Nm3", dataMethod: "미터기" },
-  ],
-  mobile: [
-    { id: "f-m1", facilityName: "업무용 승용차", fuelName: "Gasoline", unit: "L", dataMethod: "구매영수증" },
-    { id: "f-m2", facilityName: "배송 밴", fuelName: "Diesel", unit: "L", dataMethod: "구매영수증" },
-    { id: "f-m3", facilityName: "화물 트럭", fuelName: "Diesel", unit: "L", dataMethod: "청구서" },
-  ],
-  fugitive: [
-    { id: "f-g1", facilityName: "공정 배출 설비", fuelName: "LNG", unit: "Nm3", dataMethod: "계산값" },
-    { id: "f-g2", facilityName: "냉동·냉장 설비", fuelName: "기타", unit: "kg", dataMethod: "추정값" },
-  ],
+  fixed: [],
+  mobile: [],
+  fugitive: [],
 };
 
-// Keep backward compat alias
-export const INITIAL_FACILITY_ROWS: FacilityRow[] = INITIAL_FACILITY_ROWS_BY_CATEGORY.fixed;
+export const INITIAL_FACILITY_ROWS: FacilityRow[] = [];
 
 interface SourceInfoCardProps {
   rows: FacilityRow[];
@@ -51,6 +39,8 @@ interface SourceInfoCardProps {
   onSave?: (rows: FacilityRow[]) => void;
   isSaving?: boolean;
   savedFromDb?: boolean;
+  /** 연료명으로 배출계수 조회 (통합 테이블용) */
+  getEmissionFactor?: (fuel: string) => number | undefined;
 }
 
 export function SourceInfoCard({
@@ -61,6 +51,7 @@ export function SourceInfoCard({
   onSave,
   isSaving = false,
   savedFromDb = false,
+  getEmissionFactor,
 }: SourceInfoCardProps) {
   const [isSaved, setIsSaved] = useState(false);
 
@@ -125,112 +116,129 @@ export function SourceInfoCard({
       </div>
 
       <div className="flex-1 overflow-hidden rounded-xl border border-border bg-card">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/40 text-xs text-muted-foreground">
-              <th className="px-3 py-2 text-left font-medium">배출시설명</th>
-              <th className="px-3 py-2 text-left font-medium">연료명</th>
-              <th className="px-3 py-2 text-left font-medium">단위</th>
-              <th className="px-3 py-2 text-left font-medium">자료 수집방법</th>
-              {!isSaved && <th className="w-8 px-2 py-2" />}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-3 py-8 text-center text-xs text-muted-foreground">
-                  배출시설을 추가해 주세요.
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/40 text-xs text-muted-foreground">
+                <th className="px-3 py-2 text-left font-medium">배출시설명</th>
+                <th className="px-3 py-2 text-left font-medium">연료명</th>
+                <th className="px-3 py-2 text-left font-medium">단위</th>
+                <th className="px-3 py-2 text-left font-medium">자료 수집방법</th>
+                <th className="px-2 py-2 text-right font-medium">배출계수</th>
+                <th className="px-3 py-2 text-center font-medium">상태</th>
+                {!isSaved && <th className="w-8 px-2 py-2" />}
               </tr>
-            ) : (
-              rows.map((row) => {
-                const isSelected = row.id === selectedId;
-                return (
-                  <tr
-                    key={row.id}
-                    onClick={() => onSelect(row.id)}
-                    className={cn(
-                      "cursor-pointer border-b border-border/50 last:border-0 transition-colors",
-                      isSelected ? "bg-primary/5 ring-1 ring-inset ring-primary/20" : "hover:bg-muted/40",
-                    )}
-                  >
-                    {/* 배출시설명 */}
-                    <td className="px-2 py-1.5" onClick={() => onSelect(row.id)}>
-                      {isSaved ? (
-                        <span className="block px-2 py-1.5 text-xs">{row.facilityName || "—"}</span>
-                      ) : (
-                        <input
-                          type="text"
-                          value={row.facilityName}
-                          onChange={(e) => updateRow(row.id, "facilityName", e.target.value)}
-                          placeholder="시설명 입력"
-                          className={cn(
-                            "h-8 w-full rounded-md border bg-transparent px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring",
-                            isSelected ? "border-primary/40" : "border-input",
-                          )}
-                        />
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-3 py-8 text-center text-xs text-muted-foreground">
+                    배출시설을 추가해 주세요. &quot;+ 행 추가&quot; 버튼으로 시설을 등록할 수 있습니다.
+                  </td>
+                </tr>
+              ) : (
+                rows.map((row) => {
+                  const isSelected = row.id === selectedId;
+                  const factor = getEmissionFactor?.(row.fuelName);
+                  return (
+                    <tr
+                      key={row.id}
+                      onClick={() => onSelect(row.id)}
+                      className={cn(
+                        "cursor-pointer border-b border-border/50 last:border-0 transition-colors",
+                        isSelected ? "bg-primary/5 ring-1 ring-inset ring-primary/20" : "hover:bg-muted/40",
                       )}
-                    </td>
-                    {/* 연료명 */}
-                    <td className="px-2 py-1.5" onClick={() => onSelect(row.id)}>
-                      {isSaved ? (
-                        <span className="block px-2 py-1.5 text-xs text-muted-foreground">{row.fuelName}</span>
-                      ) : (
-                        <select
-                          value={row.fuelName}
-                          onChange={(e) => updateRow(row.id, "fuelName", e.target.value)}
-                          className="h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                        >
-                          {FUEL_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
-                        </select>
-                      )}
-                    </td>
-                    {/* 단위 */}
-                    <td className="px-2 py-1.5" onClick={() => onSelect(row.id)}>
-                      {isSaved ? (
-                        <span className="block px-2 py-1.5 text-xs text-muted-foreground">{row.unit}</span>
-                      ) : (
-                        <select
-                          value={row.unit}
-                          onChange={(e) => updateRow(row.id, "unit", e.target.value)}
-                          className="h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                        >
-                          {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
-                        </select>
-                      )}
-                    </td>
-                    {/* 자료 수집방법 */}
-                    <td className="px-2 py-1.5" onClick={() => onSelect(row.id)}>
-                      {isSaved ? (
-                        <span className="block px-2 py-1.5 text-xs text-muted-foreground">{row.dataMethod}</span>
-                      ) : (
-                        <select
-                          value={row.dataMethod}
-                          onChange={(e) => updateRow(row.id, "dataMethod", e.target.value)}
-                          className="h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                        >
-                          {DATA_METHOD_OPTIONS.map((m) => <option key={m} value={m}>{m}</option>)}
-                        </select>
-                      )}
-                    </td>
-                    {/* 삭제 */}
-                    {!isSaved && (
-                      <td className="px-2 py-1.5 text-center" onClick={() => onSelect(row.id)}>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); deleteRow(row.id); }}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                    >
+                      {/* 배출시설명 */}
+                      <td className="px-2 py-1.5">
+                        {isSaved ? (
+                          <span className="block px-2 py-1.5 text-xs">{row.facilityName || "—"}</span>
+                        ) : (
+                          <input
+                            type="text"
+                            value={row.facilityName}
+                            onChange={(e) => updateRow(row.id, "facilityName", e.target.value)}
+                            placeholder="시설명 입력"
+                            className={cn(
+                              "h-8 w-full rounded-md border bg-transparent px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring",
+                              isSelected ? "border-primary/40" : "border-input",
+                            )}
+                          />
+                        )}
                       </td>
-                    )}
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                      {/* 연료명 */}
+                      <td className="px-2 py-1.5">
+                        {isSaved ? (
+                          <span className="block px-2 py-1.5 text-xs text-muted-foreground">{row.fuelName}</span>
+                        ) : (
+                          <select
+                            value={row.fuelName}
+                            onChange={(e) => updateRow(row.id, "fuelName", e.target.value)}
+                            className="h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                          >
+                            {FUEL_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
+                          </select>
+                        )}
+                      </td>
+                      {/* 단위 */}
+                      <td className="px-2 py-1.5">
+                        {isSaved ? (
+                          <span className="block px-2 py-1.5 text-xs text-muted-foreground">{row.unit}</span>
+                        ) : (
+                          <select
+                            value={row.unit}
+                            onChange={(e) => updateRow(row.id, "unit", e.target.value)}
+                            className="h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                          >
+                            {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
+                          </select>
+                        )}
+                      </td>
+                      {/* 자료 수집방법 */}
+                      <td className="px-2 py-1.5">
+                        {isSaved ? (
+                          <span className="block px-2 py-1.5 text-xs text-muted-foreground">{row.dataMethod}</span>
+                        ) : (
+                          <select
+                            value={row.dataMethod}
+                            onChange={(e) => updateRow(row.id, "dataMethod", e.target.value)}
+                            className="h-8 w-full rounded-md border border-input bg-transparent px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                          >
+                            {DATA_METHOD_OPTIONS.map((m) => <option key={m} value={m}>{m}</option>)}
+                          </select>
+                        )}
+                      </td>
+                      {/* 배출계수 */}
+                      <td className="px-2 py-1.5 text-right">
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {factor != null ? factor.toFixed(4) : "—"}
+                        </span>
+                      </td>
+                      {/* 상태 */}
+                      <td className="px-2 py-1.5 text-center">
+                        <span className="inline-flex items-center rounded-full border border-border bg-green-50 px-2 py-0.5 text-[11px] font-medium text-carbon-success">
+                          활성
+                        </span>
+                      </td>
+                      {/* 삭제 */}
+                      {!isSaved && (
+                        <td className="px-2 py-1.5 text-center">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); deleteRow(row.id); }}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );

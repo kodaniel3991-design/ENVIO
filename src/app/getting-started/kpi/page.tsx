@@ -10,8 +10,50 @@ import {
   getMatchingFrameworks,
   type KpiItem,
 } from "@/lib/ai-recommendations";
-import { Sparkles, ArrowLeft, ArrowRight, Leaf, Users, Scale, Check } from "lucide-react";
+import { Sparkles, ArrowLeft, ArrowRight, Leaf, Users, Scale, Check, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+/* ── KPI 항목별 데이터 소스 매핑 ── */
+interface DataSourceDef {
+  label: string;
+  path: string;
+  color: string;
+  bgColor: string;
+  icon: React.ElementType;
+}
+
+const EMISSION_SRC: DataSourceDef = { label: "배출량 관리", path: "/data/emissions/scope1", color: "text-carbon-success", bgColor: "bg-green-50 border-green-200", icon: BarChart3 };
+const ENV_ESG_SRC: DataSourceDef = { label: "ESG > 환경(E)", path: "/data/esg/environment", color: "text-carbon-success", bgColor: "bg-green-50/60 border-green-100", icon: Leaf };
+const SOCIAL_SRC: DataSourceDef = { label: "ESG > 사회(S)", path: "/data/esg/social", color: "text-primary", bgColor: "bg-primary/5 border-primary/20", icon: Users };
+const GOV_SRC: DataSourceDef = { label: "ESG > 거버넌스(G)", path: "/data/esg/governance", color: "text-taupe-500", bgColor: "bg-taupe-50 border-taupe-200", icon: Scale };
+
+/** 배출량 관리에서 자동 집계 가능한 환경 KPI (항목명 기준) */
+const EMISSION_MANAGED_KPIS = new Set([
+  "온실가스 배출량(Scope 1+2)",
+  "공급망 탄소(Scope 3)",
+  "Scope3 카테고리별 배출",
+  "총 에너지 사용량",
+  "공급망 탄소 배출량",
+]);
+
+/** 배출량 관리 + ESG 환경 혼합 (배출량은 자동, 목표/비율은 수동) */
+const MIXED_KPIS = new Set([
+  "탄소 집약도",       // 배출량(자동) ÷ 매출(수동)
+  "배출 감축률",       // 배출량(자동), 기준연도(수동)
+  "탄소중립 목표 달성률", // 배출량(자동), 목표(수동)
+  "에너지 집약도",     // 에너지(자동) ÷ 매출(수동)
+]);
+
+const MIXED_SRC: DataSourceDef = { label: "배출량 + 환경(E)", path: "/data/emissions/scope1", color: "text-carbon-warning", bgColor: "bg-taupe-50 border-taupe-200", icon: BarChart3 };
+
+function getDataSource(category: KpiCategory, _group: string, name: string): DataSourceDef {
+  if (category === "social") return SOCIAL_SRC;
+  if (category === "governance") return GOV_SRC;
+  // 환경: 항목명 기준 판단
+  if (EMISSION_MANAGED_KPIS.has(name)) return EMISSION_SRC;
+  if (MIXED_KPIS.has(name)) return MIXED_SRC;
+  return ENV_ESG_SRC;
+}
 
 type KpiCategory = "environmental" | "social" | "governance";
 
@@ -246,14 +288,15 @@ export default function KpiPage() {
           <table className="w-full min-w-[960px] text-xs">
             <thead>
               <tr className="border-b border-border bg-muted/40">
-                <th className="w-28 px-3 py-2.5 text-left font-semibold text-muted-foreground">구분</th>
-                <th className="w-10 px-3 py-2.5 text-center font-semibold text-muted-foreground">
+                <th className="w-20 px-3 py-2.5 text-left font-semibold text-muted-foreground">구분</th>
+                <th className="w-8 px-2 py-2.5 text-center font-semibold text-muted-foreground">
                   <span className="inline-flex h-4 w-4 items-center justify-center rounded border border-border bg-background" />
                 </th>
-                <th className="whitespace-nowrap px-3 py-2.5 text-left font-semibold text-muted-foreground">KPI 항목명</th>
-                <th className="px-3 py-2.5 text-left font-semibold text-muted-foreground">설명</th>
-                <th className="whitespace-nowrap px-3 py-2.5 text-left font-semibold text-muted-foreground">선정 사유</th>
-                <th className="whitespace-nowrap px-3 py-2.5 text-left font-semibold text-muted-foreground">요구 기준</th>
+                <th className="w-[18%] whitespace-nowrap px-3 py-2.5 text-left font-semibold text-muted-foreground">KPI 항목명</th>
+                <th className="w-[18%] px-3 py-2.5 text-left font-semibold text-muted-foreground">설명</th>
+                <th className="w-[10%] whitespace-nowrap px-3 py-2.5 text-left font-semibold text-muted-foreground">데이터 소스</th>
+                <th className="w-[30%] px-3 py-2.5 text-left font-semibold text-muted-foreground">선정 사유</th>
+                <th className="w-[14%] whitespace-nowrap px-3 py-2.5 text-left font-semibold text-muted-foreground">요구 기준</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -322,10 +365,23 @@ export default function KpiPage() {
                     </td>
                     {/* 설명 */}
                     <td className="px-3 py-2.5 text-muted-foreground leading-snug">{item.description}</td>
+                    {/* 데이터 소스 */}
+                    <td className="whitespace-nowrap px-3 py-2.5">
+                      {(() => {
+                        const src = getDataSource(activeTab, item.group, item.name);
+                        const SrcIcon = src.icon;
+                        return (
+                          <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium", src.bgColor, src.color)}>
+                            <SrcIcon className="h-3 w-3" />
+                            {src.label}
+                          </span>
+                        );
+                      })()}
+                    </td>
                     {/* 선정 사유 */}
-                    <td className="whitespace-nowrap px-3 py-2.5 text-muted-foreground">{item.reason}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground leading-snug">{item.reason}</td>
                     {/* 요구 기준 */}
-                    <td className="whitespace-nowrap px-3 py-2.5 text-muted-foreground">{item.criteria}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground leading-snug">{item.criteria}</td>
                   </tr>
                 );
               })}

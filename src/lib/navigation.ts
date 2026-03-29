@@ -54,6 +54,7 @@ export const NAV_ITEMS: NavItem[] = [
         label: "",
         children: [
           link("/getting-started", "진행 현황"),
+          link("/getting-started/data-flow", "데이터 흐름 구조"),
           link("/getting-started/organization", "① 조직 설정"),
           link("/getting-started/facility", "② 사업장 설정"),
           link("/getting-started/scope", "③ Scope 설정"),

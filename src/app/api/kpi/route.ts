@@ -168,6 +168,48 @@ export async function GET(req: NextRequest) {
       ]);
     }
 
+    // type=by-scope&scope=1 — 해당 Scope에 기여하는 KPI 목록 (calcRule 기반)
+    if (type === "by-scope") {
+      const scopeParam = req.nextUrl.searchParams.get("scope");
+      const categoryParam = req.nextUrl.searchParams.get("category"); // optional
+      if (!scopeParam) {
+        return NextResponse.json({ error: "scope 파라미터 필수" }, { status: 400 });
+      }
+      const scopeNum = parseInt(scopeParam);
+
+      const allAuto = await prisma.kpiMaster.findMany({
+        where: { calcType: "auto" },
+        orderBy: { code: "asc" },
+      });
+
+      const matched = allAuto.filter((kpi) => {
+        if (!kpi.calcRule) return false;
+        try {
+          const rule = JSON.parse(kpi.calcRule);
+          const scopes = Array.isArray(rule.scope) ? rule.scope : [rule.scope];
+          if (!scopes.includes(scopeNum)) return false;
+          if (categoryParam && rule.categories && Array.isArray(rule.categories)) {
+            return rule.categories.includes(categoryParam);
+          }
+          return true;
+        } catch {
+          return false;
+        }
+      });
+
+      return NextResponse.json(
+        matched.map((r) => ({
+          id: r.id,
+          code: r.code,
+          name: r.name,
+          category: r.category,
+          unit: r.unit,
+          calcType: r.calcType,
+          calcRule: r.calcRule ? JSON.parse(r.calcRule) : null,
+        }))
+      );
+    }
+
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   } catch (err: any) {
     console.error("[GET /api/kpi]", err);

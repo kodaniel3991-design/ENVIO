@@ -23,11 +23,7 @@ function genId() {
   return `f-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export const INITIAL_SCOPE2_ROWS: Scope2FacilityRow[] = [
-  { id: "f-1", facilityName: "본사 사무실", energyType: "Electricity", unit: "MWh", dataMethod: "청구서" },
-  { id: "f-2", facilityName: "제조 공장 1", energyType: "Electricity", unit: "MWh", dataMethod: "미터기" },
-  { id: "f-3", facilityName: "지역난방", energyType: "Steam", unit: "GJ", dataMethod: "청구서" },
-];
+export const INITIAL_SCOPE2_ROWS: Scope2FacilityRow[] = [];
 
 interface Scope2SourceInfoCardProps {
   rows: Scope2FacilityRow[];
@@ -37,6 +33,7 @@ interface Scope2SourceInfoCardProps {
   onSave?: (rows: Scope2FacilityRow[]) => void;
   isSaving?: boolean;
   savedFromDb?: boolean;
+  getEmissionFactor?: (energyType: string) => number | undefined;
 }
 
 export function Scope2SourceInfoCard({
@@ -47,6 +44,7 @@ export function Scope2SourceInfoCard({
   onSave,
   isSaving = false,
   savedFromDb = false,
+  getEmissionFactor,
 }: Scope2SourceInfoCardProps) {
   const [isSaved, setIsSaved] = useState(false);
 
@@ -118,13 +116,15 @@ export function Scope2SourceInfoCard({
               <th className="px-3 py-2 text-left font-medium">에너지 유형</th>
               <th className="px-3 py-2 text-left font-medium">단위</th>
               <th className="px-3 py-2 text-left font-medium">자료 수집방법</th>
+              <th className="px-2 py-2 text-right font-medium">배출계수</th>
+              <th className="px-3 py-2 text-center font-medium">상태</th>
               {!isSaved && <th className="w-8 px-2 py-2" />}
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-3 py-8 text-center text-xs text-muted-foreground">
+                <td colSpan={7} className="px-3 py-8 text-center text-xs text-muted-foreground">
                   배출시설을 추가해 주세요.
                 </td>
               </tr>
@@ -198,6 +198,16 @@ export function Scope2SourceInfoCard({
                           {DATA_METHOD_OPTIONS.map((m) => <option key={m} value={m}>{m}</option>)}
                         </select>
                       )}
+                    </td>
+                    {/* 배출계수 */}
+                    <td className="px-2 py-1.5 text-right">
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {getEmissionFactor?.(row.energyType)?.toFixed(4) ?? "—"}
+                      </span>
+                    </td>
+                    {/* 상태 */}
+                    <td className="px-2 py-1.5 text-center">
+                      <span className="inline-flex items-center rounded-full border border-border bg-green-50 px-2 py-0.5 text-[11px] font-medium text-carbon-success">활성</span>
                     </td>
                     {/* 삭제 */}
                     {!isSaved && (

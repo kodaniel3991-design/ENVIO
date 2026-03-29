@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useWizardStore, WIZARD_STEPS } from "./wizard-store";
-import { CheckCircle2, ArrowRight, Sparkles } from "lucide-react";
+import { CheckCircle2, ArrowRight, Sparkles, GitBranch, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
+
+const DataFlowMap = dynamic(
+  () => import("@/components/getting-started/data-flow-map").then((m) => ({ default: m.DataFlowMap })),
+  { ssr: false }
+);
 
 const STEP_DESCRIPTIONS: Record<number, string> = {
   1: "회사명, 산업군, 국가, 직원 수를 입력합니다. 산업군 선택 시 AI가 최적 KPI를 자동 추천합니다.",
@@ -13,6 +19,29 @@ const STEP_DESCRIPTIONS: Record<number, string> = {
   4: "GRI, ISSB, CDP 등 공시 기준을 선택하면 KPI가 자동 매핑됩니다.",
   5: "환경·사회·거버넌스 KPI를 선택합니다. 공시 기준 기반 추천 KPI가 자동으로 표시됩니다.",
 };
+
+function FlowMapSection() {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        className="flex w-full items-center gap-2.5 px-5 py-3 text-left hover:bg-muted/30 transition-colors"
+      >
+        <GitBranch className="h-4 w-4 text-primary" />
+        <span className="text-sm font-semibold text-foreground">데이터 흐름 구조</span>
+        <span className="text-xs text-muted-foreground">KPI 설정 → 배출원 등록 → 데이터 입력 → 자동 집계</span>
+        <ChevronDown className={cn("ml-auto h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div className="border-t border-border px-5 py-4">
+          <DataFlowMap />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function GettingStartedPage() {
   const { state, hydrated, markStepComplete } = useWizardStore();
@@ -63,6 +92,9 @@ export default function GettingStartedPage() {
           </div>
         </div>
       )}
+
+      {/* 데이터 흐름 마인드맵 */}
+      <FlowMapSection />
 
       {/* 단계별 카드 */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -220,14 +220,16 @@ export function DashboardContent() {
               </span>
             </div>
             <p className="mt-3 text-xs font-medium text-muted-foreground">ESG 점수</p>
-            <div className="mt-1 flex items-baseline gap-1.5">
-              <span className="font-display text-[28px] font-bold tracking-[-0.04em] text-foreground animate-count">82</span>
-              <span className="text-sm font-medium text-muted-foreground">점</span>
-            </div>
-            <div className="mt-2 flex gap-2 text-[10px] font-medium">
-              <span className="text-green-500">E 85</span>
-              <span className="text-taupe-400">S 76</span>
-              <span className="text-taupe-300">G 84</span>
+            <div className="mt-1 flex items-baseline justify-between">
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-display text-[28px] font-bold tracking-[-0.04em] text-foreground animate-count">82</span>
+                <span className="text-sm font-medium text-muted-foreground">점</span>
+              </div>
+              <div className="flex gap-2 text-[12px] font-medium">
+                <span className="text-green-500">E 85</span>
+                <span className="text-taupe-400">S 76</span>
+                <span className="text-taupe-300">G 84</span>
+              </div>
             </div>
             <div className="mt-2 h-1 w-full rounded-full bg-muted">
               <div className="h-full rounded-full bg-carbon-success animate-bar" style={{ width: "82%" }} />
@@ -249,11 +251,13 @@ export function DashboardContent() {
             <p className="mt-3 text-xs font-medium text-muted-foreground">데이터 수집 완료율</p>
             {scopeLoading ? <Skeleton className="mt-1 h-8 w-20" /> : (
               <>
-                <div className="mt-1 flex items-baseline gap-1.5">
-                  <span className="font-display text-[28px] font-bold tracking-[-0.04em] text-foreground">{totalTco2e > 0 ? "83" : "–"}</span>
-                  <span className="text-sm font-medium text-muted-foreground">%</span>
+                <div className="mt-1 flex items-baseline justify-between">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-display text-[28px] font-bold tracking-[-0.04em] text-foreground">83</span>
+                    <span className="text-sm font-medium text-muted-foreground">%</span>
+                  </div>
+                  <span className="text-[12px] font-medium text-muted-foreground">57 / 69 항목</span>
                 </div>
-                <p className="mt-0.5 text-[10px] text-muted-foreground">57 / 69 항목</p>
                 <div className="mt-2 h-1 w-full rounded-full bg-muted">
                   <div className="h-full rounded-full bg-primary animate-bar" style={{ width: "83%" }} />
                 </div>
@@ -276,11 +280,13 @@ export function DashboardContent() {
             <p className="mt-3 text-xs font-medium text-muted-foreground">목표 KPI 달성률</p>
             {kpisLoading ? <Skeleton className="mt-1 h-8 w-16" /> : (
               <>
-                <div className="mt-1 flex items-baseline gap-1.5">
-                  <span className="font-display text-[28px] font-bold tracking-[-0.04em] text-foreground">74</span>
-                  <span className="text-sm font-medium text-muted-foreground">%</span>
+                <div className="mt-1 flex items-baseline justify-between">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-display text-[28px] font-bold tracking-[-0.04em] text-foreground">74</span>
+                    <span className="text-sm font-medium text-muted-foreground">%</span>
+                  </div>
+                  <span className="text-[12px] font-medium text-muted-foreground">9 / 12 KPI</span>
                 </div>
-                <p className="mt-0.5 text-[10px] text-muted-foreground">9 / 12 KPI</p>
                 <div className="mt-2 h-1 w-full rounded-full bg-muted">
                   <div className="h-full rounded-full bg-carbon-success animate-bar" style={{ width: "74%" }} />
                 </div>
