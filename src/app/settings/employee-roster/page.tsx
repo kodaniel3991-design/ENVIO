@@ -133,6 +133,8 @@ export default function SettingsEmployeeRosterPage() {
   });
 
   const [list, setList] = useState<EmployeeRosterItem[]>([]);
+  const listRef = useRef(list);
+  useEffect(() => { listRef.current = list; }, [list]);
   useEffect(() => {
     if (roster) setList((roster as EmployeeRosterItem[]).map((e) => ({ ...e })));
   }, [roster]);
@@ -503,7 +505,22 @@ export default function SettingsEmployeeRosterPage() {
     for (const emp of targets) {
       await calcEmployeeDistance(emp);
     }
-    toast.success(`${targets.length}명 거리 계산 완료`, { id: tid });
+    toast.loading("거리 계산 완료, 저장 중...", { id: tid });
+    // 계산 후 자동 저장
+    try {
+      // list는 이미 calcEmployeeDistance에서 업데이트됨 — 최신 list를 직접 참조
+      const latestList = listRef.current;
+      const items = latestList.filter((e) => e.name.trim() !== "").map((e) => ({
+        ...e,
+        worksiteId: e.worksiteId ?? selectedWorksiteId ?? undefined,
+      }));
+      await saveEmployeeRoster(items, selectedWorksiteId ?? null);
+      queryClient.invalidateQueries({ queryKey: ["employee-roster"] });
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      toast.success(`${targets.length}명 거리 계산 및 저장 완료`, { id: tid });
+    } catch {
+      toast.error("거리 계산은 완료했지만 저장 중 오류가 발생했습니다.", { id: tid });
+    }
   };
 
   return (

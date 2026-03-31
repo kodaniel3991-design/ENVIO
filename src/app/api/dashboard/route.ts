@@ -1,8 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-// 공통: 스코프별 배출량 집계 헬퍼 (PostgreSQL LATERAL JOIN)
+// 교통수단별 km당 배출계수 (tCO₂e/km) — commute-factors.ts와 동기화
+const COMMUTE_FACTOR_PER_KM: Record<string, number> = {
+  car: 0.000210, public: 0.0000899, ev: 0.0000404, walk_bike: 0,
+};
+const FUEL_FACTOR_PER_KM: Record<string, number> = {
+  "휘발유": 0.000210, "경유": 0.000174, "LPG": 0.000152,
+};
+// 한글 교통수단 → 영문 코드
+const TRANSPORT_MAP: Record<string, string> = {
+  "승용차": "car", "자가용": "car", "대중교통": "public",
+  "전기차": "ev", "도보": "walk_bike", "자전거": "walk_bike",
+};
+
+function getKmFactor(transport: string | null, fuel: string | null): number {
+  const t = transport ? (TRANSPORT_MAP[transport] ?? transport) : "car";
+  if (fuel === "전기차") return COMMUTE_FACTOR_PER_KM.ev ?? 0;
+  if (t === "car" && fuel) return FUEL_FACTOR_PER_KM[fuel] ?? COMMUTE_FACTOR_PER_KM.car;
+  return COMMUTE_FACTOR_PER_KM[t] ?? 0;
+}
+
+// 공통: 스코프별 배출량 집계 헬퍼
 async function calcScopeEmissions(year: number) {
+  // 1) 일반 배출량 (activity × emission_factor)
   const rows = await prisma.$queryRaw<{ scope: number; month: number; total: number }[]>`
     SELECT ef.scope, ad.month,
            SUM(ad.activity_value * COALESCE(em.co2_factor, 0)) AS total
@@ -14,8 +35,57 @@ async function calcScopeEmissions(year: number) {
       LIMIT 1
     ) em ON true
     WHERE ad.year = ${year}
+      AND ef.category_id != 'u7'
     GROUP BY ef.scope, ad.month
   `;
+
+  // 2) Scope 3 U7 (직원 출퇴근): 출근일수 × 직원별 (편도거리 × 2 × km배출계수)
+  const u7Facilities = await prisma.emissionFacility.findMany({
+    where: { scope: 3, categoryId: "u7" },
+  });
+  if (u7Facilities.length > 0) {
+    const u7Activity = await prisma.activityData.findMany({
+      where: {
+        facilityId: { in: u7Facilities.map((f) => f.id) },
+        year,
+      },
+    });
+    // 시설별 교통수단+연료로 매핑된 직원 찾기
+    const employees = await prisma.employee.findMany({
+      where: { commuteDistanceKm: { not: null } },
+    });
+
+    for (const fac of u7Facilities) {
+      const facTransport = fac.activityType ? (TRANSPORT_MAP[fac.activityType] ?? fac.activityType) : "car";
+      const facFuel = fac.fuelType === "전기차" ? null : fac.fuelType;
+      const matchedEmps = employees.filter((e) => {
+        const eTransport = e.commuteTransport ? (TRANSPORT_MAP[e.commuteTransport] ?? e.commuteTransport) : "car";
+        const eFuel = e.fuel === "전기차" ? null : e.fuel;
+        return (
+          e.worksiteId === fac.worksiteId &&
+          eTransport === facTransport &&
+          (eFuel ?? "") === (facFuel ?? "")
+        );
+      });
+      // 일일 배출량 합계 = Σ(편도km × 2 × 배출계수)
+      const dailyTotal = matchedEmps.reduce((sum, emp) => {
+        const km = Number(emp.commuteDistanceKm) || 0;
+        const factor = getKmFactor(emp.commuteTransport, emp.fuel);
+        return sum + km * 2 * factor;
+      }, 0);
+
+      // 월별: 출근일수 × dailyTotal
+      const facActivity = u7Activity.filter((a) => a.facilityId === fac.id);
+      for (const act of facActivity) {
+        const workdays = Number(act.activityValue) || 0;
+        const monthlyEmission = dailyTotal * workdays;
+        if (monthlyEmission > 0) {
+          rows.push({ scope: 3, month: act.month, total: monthlyEmission });
+        }
+      }
+    }
+  }
+
   return rows;
 }
 

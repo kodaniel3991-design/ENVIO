@@ -37,11 +37,13 @@ export function CarbonFootprintChart({
 
   const scope1Data = data.map((d) => ({ ...d, value: d.scope1 as number }));
   const scope2Data = data.map((d) => ({ ...d, value: d.scope2 as number }));
+  const scope3Data = data.map((d) => ({ ...d, value: d.scope3 as number }));
   const allData = data.map((d) => ({
     ...d,
     scope1: d.scope1,
     scope2: d.scope2,
     scope3: d.scope3,
+    total: (d.scope1 as number) + (d.scope2 as number) + (d.scope3 as number),
   }));
 
   return (
@@ -60,13 +62,21 @@ export function CarbonFootprintChart({
             <TabsTrigger value="s2" className="text-xs">
               S2
             </TabsTrigger>
+            <TabsTrigger value="s3" className="text-xs">
+              S3
+            </TabsTrigger>
             <TabsTrigger value="all" className="text-xs">
               전체
+            </TabsTrigger>
+            <TabsTrigger value="total" className="text-xs">
+              합산
             </TabsTrigger>
           </TabsList>
           <TabsContent value="s1" className="mt-0" />
           <TabsContent value="s2" className="mt-0" />
+          <TabsContent value="s3" className="mt-0" />
           <TabsContent value="all" className="mt-0" />
+          <TabsContent value="total" className="mt-0" />
         </Tabs>
       }
     >
@@ -85,7 +95,7 @@ export function CarbonFootprintChart({
                   tickLine={false}
                   interval={0}
                 />
-                <YAxis hide />
+                <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={40} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
@@ -98,6 +108,39 @@ export function CarbonFootprintChart({
                   dataKey="value"
                   name="Scope 1"
                   stroke={CHART_COLORS.scope1}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  isAnimationActive
+                  animationDuration={1200}
+                  animationEasing="ease-out"
+                />
+              </LineChart>
+            ) : activeTab === "s3" ? (
+              <LineChart
+                data={scope3Data}
+                margin={{ top: 5, right: 20, left: 5, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={0}
+                />
+                <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={40} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "var(--radius)",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  name="Scope 3"
+                  stroke={CHART_COLORS.scope3}
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   isAnimationActive
@@ -118,7 +161,7 @@ export function CarbonFootprintChart({
                   tickLine={false}
                   interval={0}
                 />
-                <YAxis hide />
+                <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={40} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
@@ -138,7 +181,7 @@ export function CarbonFootprintChart({
                   animationEasing="ease-out"
                 />
               </LineChart>
-            ) : (
+            ) : activeTab === "all" ? (
               <LineChart
                 data={allData}
                 margin={{ top: 5, right: 20, left: 5, bottom: 0 }}
@@ -151,7 +194,7 @@ export function CarbonFootprintChart({
                   tickLine={false}
                   interval={0}
                 />
-                <YAxis hide />
+                <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={40} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
@@ -188,6 +231,39 @@ export function CarbonFootprintChart({
                   name="Scope 3"
                   stroke={CHART_COLORS.scope3}
                   strokeWidth={2}
+                  dot={{ r: 3 }}
+                  isAnimationActive
+                  animationDuration={1200}
+                  animationEasing="ease-out"
+                />
+              </LineChart>
+            ) : (
+              <LineChart
+                data={allData}
+                margin={{ top: 5, right: 20, left: 5, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={0}
+                />
+                <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} width={40} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "var(--radius)",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="total"
+                  name="합산 (S1+S2+S3)"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2.5}
                   dot={{ r: 3 }}
                   isAnimationActive
                   animationDuration={1200}

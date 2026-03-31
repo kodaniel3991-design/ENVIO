@@ -2,7 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import { useKpiByScope } from "@/hooks/use-kpi-by-scope";
-import { Target, CheckCircle2, AlertCircle, Info, Package } from "lucide-react";
+import { KpiMappingSection } from "@/components/common/kpi-mapping-section";
+import { AlertCircle, Info, Package } from "lucide-react";
 
 const CATEGORY_LABELS: Record<string, string> = {
   u1: "구입상품 및 서비스", u2: "자본재", u3: "연료·에너지 관련(기타)",
@@ -71,26 +72,6 @@ export function Scope3SourceReference({ activeCategoryId, facilities }: Scope3So
       </div>
 
       <div className="flex-1 overflow-hidden rounded-xl border border-border bg-card">
-        {/* 관련 KPI */}
-        <div className="border-b border-border bg-primary/5 px-4 py-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Target className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs font-semibold text-foreground">이 카테고리가 기여하는 KPI</span>
-          </div>
-          {contributingKpis.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {contributingKpis.map((kpi) => (
-                <span key={kpi.id} className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-background px-2 py-0.5 text-[11px] font-medium text-primary" title={kpi.name}>
-                  <Target className="h-2.5 w-2.5" />
-                  {kpi.code} {kpi.name}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[11px] text-muted-foreground">KPI 매핑에서 Scope 3 자동 집계를 설정하면 표시됩니다.</p>
-          )}
-        </div>
-
         {/* 카테고리 가이드 */}
         {guide && (
           <div className="border-b border-border px-4 py-3">
@@ -123,40 +104,9 @@ export function Scope3SourceReference({ activeCategoryId, facilities }: Scope3So
           </div>
         )}
 
-        {/* 배출원 → KPI 매핑 현황 */}
+        {/* 배출원 → KPI 매핑 현황 (접기/펼치기) */}
         {hasFacilities ? (
-          <>
-            <div className="px-4 py-2 flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-carbon-success" />
-              <span className="text-xs font-medium text-foreground">배출원 → KPI 매핑 ({facilities!.length}개)</span>
-            </div>
-            <div className="divide-y divide-border/60">
-              {facilities!.map((f) => (
-                <div key={f.id} className="px-4 py-2.5 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-foreground">{f.name}</span>
-                    <span className="text-[11px] text-muted-foreground">{f.activityType} · {f.unit}</span>
-                  </div>
-                  {contributingKpis.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {contributingKpis.map((kpi) => (
-                        <span
-                          key={kpi.id}
-                          className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[10px] font-medium text-primary"
-                        >
-                          <Target className="h-2.5 w-2.5" />
-                          {kpi.name}
-                          <span className="text-primary/50">{kpi.code}</span>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[10px] text-muted-foreground">매핑된 KPI 없음 — KPI 매핑 페이지에서 설정하세요</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </>
+          <KpiMappingSection facilities={facilities!} contributingKpis={contributingKpis} renderDetail={(f) => `${f.activityType} · ${f.unit}`} />
         ) : (
           <div className="px-4 py-6 text-center">
             <AlertCircle className="mx-auto mb-2 h-6 w-6 text-muted-foreground/40" />

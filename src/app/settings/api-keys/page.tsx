@@ -12,7 +12,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getDistanceApiSettings, saveDistanceApiSettings } from "@/services/api";
+// DB 연동 거리 API 설정
+const getDistanceApiSettings = async (): Promise<DistanceApiSettings> => {
+  const res = await fetch("/api/distance");
+  if (!res.ok) return { provider: "none", enabled: false };
+  return res.json();
+};
+const saveDistanceApiSettings = async (s: DistanceApiSettings) => {
+  const res = await fetch("/api/distance", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(s),
+  });
+  return res.json();
+};
 import type { DistanceApiProvider, DistanceApiSettings } from "@/types";
 import type { IntegrationSource } from "@/hooks/use-integrations";
 import { cn } from "@/lib/utils";

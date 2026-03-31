@@ -35,7 +35,10 @@ import { useEmployees } from "@/hooks/use-employees";
 import { useWorksites } from "@/hooks/use-worksites";
 import { calcEmployeeDailyEmission, getEmployeeCommuteFactorPerKm } from "@/lib/commute-factors";
 import type { CommuteTransportType } from "@/types";
-import { U7SourceInfoCard, type U7FacilityRow } from "@/components/scope3/u7-source-info-card";
+import { U7SourceInfoCard, type U7FacilityRow, getTransportLabel } from "@/components/scope3/u7-source-info-card";
+
+const NOW = new Date();
+const CURRENT_MONTH_IDX = NOW.getMonth(); // 0-indexed
 
 const MONTH_LABELS = [
   "1월",
@@ -732,6 +735,8 @@ export default function Scope3Page() {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 6 }, (_, i) => String(currentYear - i));
   const [year, setYear] = useState(String(currentYear));
+  const isCurrentYear = year === String(NOW.getFullYear());
+  const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
   const [mode, setMode] = useState<DataEntryMode>("manual");
   const [dataStatus, setDataStatus] = useState<DataStatus>("draft");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("u1");
@@ -787,16 +792,37 @@ export default function Scope3Page() {
     return seen.size;
   }, [employees]);
 
-  // 사업장+교통수단+연료 조합별 자동 행 생성 (배출원 정보 자동 채우기용)
+  // 한글 교통수단 → 영문 코드 변환
+  const TRANSPORT_KO_TO_CODE: Record<string, string> = {
+    "승용차": "car", "자가용": "car", "자동차": "car",
+    "대중교통": "public", "버스": "public", "지하철": "public",
+    "전기차": "ev", "전기·수소차": "ev", "수소차": "ev",
+    "도보": "walk_bike", "자전거": "walk_bike", "도보·자전거": "walk_bike",
+  };
+  const VALID_TRANSPORTS = new Set(["car", "public", "ev", "walk_bike"]);
+  const normalizeTransport = (t: string | undefined, fuel?: string | undefined) => {
+    // 연료가 "전기차"이면 교통수단을 ev로 분류
+    if (fuel === "전기차") return "ev";
+    if (!t) return "car";
+    if (VALID_TRANSPORTS.has(t)) return t;
+    return TRANSPORT_KO_TO_CODE[t] ?? "car";
+  };
+
+  // 연료 정규화 (ev/대중교통/도보는 연료 없음)
+  const normalizeFuel = (fuel: string | undefined, transport: string) => {
+    if (transport === "public" || transport === "ev" || transport === "walk_bike") return "";
+    if (!fuel || fuel === "전기차") return "";
+    return fuel; // 휘발유, 경유, LPG 등 그대로 유지
+  };
+
+  // 사업장+교통수단+연료 조합별 자동 행 생성 (직원명부 연동)
   const u7ComboRows = useMemo(() => {
-    const VALID_TRANSPORTS = new Set(["car", "public", "ev", "walk_bike"]);
     const map = new Map<string, { worksiteName: string; transport: string; fuel: string }>();
     for (const emp of employees) {
       const wsId = emp.worksiteId ?? "";
       const wsName = worksites.find((w) => w.id === wsId)?.name ?? (wsId || "미지정");
-      const rawTransport = emp.commuteTransport ?? "";
-      const transport = VALID_TRANSPORTS.has(rawTransport) ? rawTransport : "car";
-      const fuel = emp.fuel ?? "";
+      const transport = normalizeTransport(emp.commuteTransport, emp.fuel);
+      const fuel = normalizeFuel(emp.fuel, transport);
       const key = `${wsId}::${transport}::${fuel}`;
       if (!map.has(key)) map.set(key, { worksiteName: wsName, transport, fuel });
     }
@@ -811,9 +837,6 @@ export default function Scope3Page() {
   // 선택된 배출원 행과 매핑되는 직원 (사업장+교통수단+연료 일치)
   const u7SelectedEmployees = useMemo(() => {
     if (!isU7) return [];
-    const VALID_TRANSPORTS = new Set(["car", "public", "ev", "walk_bike"]);
-    const normalizeT = (t: string | undefined) =>
-      t && VALID_TRANSPORTS.has(t) ? t : "car";
     const selectedRow =
       localU7Facilities.find((r) => r.id === selectedFacilityId) ??
       u7ComboRows.find((r) => r.id === selectedFacilityId);
@@ -822,10 +845,12 @@ export default function Scope3Page() {
       const empWsName =
         worksites.find((w) => w.id === e.worksiteId)?.name ??
         (e.worksiteId || "미지정");
+      const empTransport = normalizeTransport(e.commuteTransport, e.fuel);
+      const empFuel = normalizeFuel(e.fuel, empTransport);
       return (
         empWsName === selectedRow.worksiteName &&
-        normalizeT(e.commuteTransport) === normalizeT(selectedRow.commuteTransport) &&
-        (e.fuel ?? "") === selectedRow.fuel
+        empTransport === selectedRow.commuteTransport &&
+        empFuel === selectedRow.fuel
       );
     });
   }, [isU7, selectedFacilityId, localU7Facilities, u7ComboRows, employees, worksites]);
@@ -840,13 +865,11 @@ export default function Scope3Page() {
   const u7SelectedDailyEmission = useMemo(() => {
     if (!isU7) return 0;
     return u7SelectedEmployees.reduce(
-      (sum, emp) =>
-        sum +
-        calcEmployeeDailyEmission(
-          emp.commuteDistanceKm,
-          emp.commuteTransport as CommuteTransportType | undefined,
-          emp.fuel,
-        ),
+      (sum, emp) => {
+        const t = normalizeTransport(emp.commuteTransport, emp.fuel) as CommuteTransportType;
+        const f = normalizeFuel(emp.fuel, t);
+        return sum + calcEmployeeDailyEmission(emp.commuteDistanceKm, t, f || undefined);
+      },
       0,
     );
   }, [isU7, u7SelectedEmployees]);
@@ -946,16 +969,15 @@ export default function Scope3Page() {
     setU7WorkdaysMap({});
   }, [year]);
 
-  // u7: DB 미저장 상태에서 직원 콤보 행이 로드되면 로컬 상태 업데이트
+  // u7: 직원명부 콤보 행이 로드되면 로컬 상태에 항상 반영 (직원명부 연동)
   useEffect(() => {
     if (!isU7 || u7ComboRows.length === 0) return;
-    if (dbScope3Facilities && dbScope3Facilities.length > 0) return;
     setLocalU7Facilities(u7ComboRows);
     setSelectedFacilityId((prev) => {
       const exists = u7ComboRows.some((r) => r.id === prev);
       return exists ? prev : (u7ComboRows[0]?.id ?? "");
     });
-  }, [isU7, u7ComboRows, dbScope3Facilities]);
+  }, [isU7, u7ComboRows]);
 
   // DB 데이터 로드 시 로컬 상태 동기화 (페이지 재방문 대응)
   useEffect(() => {
@@ -963,13 +985,15 @@ export default function Scope3Page() {
     if (isU7) {
       // u7: facility_name=사업장명, activity_type=교통수단, fuel_type=연료
       if (dbScope3Facilities.length > 0) {
-        const VALID_TRANSPORTS = new Set(["car", "public", "ev", "walk_bike"]);
-        const u7Rows: U7FacilityRow[] = dbScope3Facilities.map((r) => ({
-          id: r.id,
-          worksiteName: r.facility_name,
-          commuteTransport: VALID_TRANSPORTS.has(r.activity_type ?? "") ? r.activity_type! : "car",
-          fuel: r.fuel_type ?? "",
-        }));
+        const u7Rows: U7FacilityRow[] = dbScope3Facilities.map((r) => {
+          const transport = normalizeTransport(r.activity_type ?? undefined);
+          return {
+            id: r.id,
+            worksiteName: r.facility_name,
+            commuteTransport: transport,
+            fuel: normalizeFuel(r.fuel_type ?? undefined, transport),
+          };
+        });
         setLocalU7Facilities(u7Rows);
         setSelectedFacilityId((prev) => {
           const exists = u7Rows.some((r) => r.id === prev);
@@ -1266,12 +1290,20 @@ export default function Scope3Page() {
             )}
             <Scope3SourceReference
               activeCategoryId={selectedCategoryId}
-              facilities={scope3Facilities.map((f) => ({
-                id: f.id,
-                name: f.facilityName,
-                activityType: f.activityType,
-                unit: f.unit,
-              }))}
+              facilities={isU7
+                ? localU7Facilities.map((f) => ({
+                    id: f.id,
+                    name: f.worksiteName,
+                    activityType: `${getTransportLabel(f.commuteTransport)}${f.fuel ? ` · ${f.fuel}` : ""}`,
+                    unit: "km",
+                  }))
+                : scope3Facilities.map((f) => ({
+                    id: f.id,
+                    name: f.facilityName,
+                    activityType: f.activityType,
+                    unit: f.unit,
+                  }))
+              }
             />
           </div>
 
@@ -1416,9 +1448,12 @@ export default function Scope3Page() {
                     <thead>
                       <tr className="border-b border-border bg-muted/40 text-xs text-muted-foreground">
                         <th className="w-28 px-3 py-2 text-left font-medium">구분</th>
-                        {MONTH_LABELS.map((label) => (
-                          <th key={label} className="px-1 py-2 text-right font-medium">{label}</th>
-                        ))}
+                        {MONTH_LABELS.map((label, idx) => {
+                          const isCurrent = isCurrentYear && idx === CURRENT_MONTH_IDX;
+                          return (
+                            <th key={label} className={cn("px-1 py-2 text-right font-medium", isCurrent && "bg-taupe-100/60 text-foreground")}>{label}</th>
+                          );
+                        })}
                         <th className="w-24 px-3 py-2 text-right font-medium">합계</th>
                       </tr>
                     </thead>
@@ -1427,7 +1462,7 @@ export default function Scope3Page() {
                       <tr className="border-b border-border/60">
                         <td className="px-3 py-2 text-xs font-medium">출근일 수 (일)</td>
                         {u7Workdays.map((days, idx) => (
-                          <td key={idx} className="px-1 py-2 text-right">
+                          <td key={idx} className={cn("px-1 py-2 text-right", isCurrentYear && idx === CURRENT_MONTH_IDX && "bg-taupe-50/60")}>
                             <input
                               type="number"
                               min={0}
@@ -1454,7 +1489,7 @@ export default function Scope3Page() {
                       <tr className="border-b border-border/60">
                         <td className="px-3 py-2 text-xs font-medium">배출량 (tCO₂e)</td>
                         {u7MonthlyEmissions.map((v, idx) => (
-                          <td key={idx} className="px-2 py-2 text-right text-xs">{formatNumber(v, 4)}</td>
+                          <td key={idx} className={cn("px-2 py-2 text-right text-xs", isCurrentYear && idx === CURRENT_MONTH_IDX && "bg-taupe-50/60")}>{formatNumber(v, 4)}</td>
                         ))}
                         <td className="px-3 py-2 text-right text-xs font-semibold">
                           {formatNumber(u7TotalEmission, 4)} tCO₂e
@@ -1464,21 +1499,21 @@ export default function Scope3Page() {
                       <tr className="border-b border-border/60 bg-muted/20">
                         <td className="px-3 py-2 text-xs text-muted-foreground pl-5">CO₂ (tCO₂)</td>
                         {u7MonthlyEmissions.map((v, idx) => (
-                          <td key={idx} className="px-2 py-2 text-right text-xs text-muted-foreground">{formatNumber(v * 0.95, 4)}</td>
+                          <td key={idx} className={cn("px-2 py-2 text-right text-xs text-muted-foreground", isCurrentYear && idx === CURRENT_MONTH_IDX && "bg-taupe-50/60")}>{formatNumber(v * 0.95, 4)}</td>
                         ))}
                         <td className="px-3 py-2 text-right text-xs text-muted-foreground">{formatNumber(u7TotalEmission * 0.95, 4)}</td>
                       </tr>
                       <tr className="border-b border-border/60 bg-muted/20">
                         <td className="px-3 py-2 text-xs text-muted-foreground pl-5">CH₄ (tCH₄)</td>
                         {u7MonthlyEmissions.map((v, idx) => (
-                          <td key={idx} className="px-2 py-2 text-right text-xs text-muted-foreground">{formatNumber(v * 0.03, 4)}</td>
+                          <td key={idx} className={cn("px-2 py-2 text-right text-xs text-muted-foreground", isCurrentYear && idx === CURRENT_MONTH_IDX && "bg-taupe-50/60")}>{formatNumber(v * 0.03, 4)}</td>
                         ))}
                         <td className="px-3 py-2 text-right text-xs text-muted-foreground">{formatNumber(u7TotalEmission * 0.03, 4)}</td>
                       </tr>
                       <tr className="bg-muted/20">
                         <td className="px-3 py-2 text-xs text-muted-foreground pl-5">N₂O (tN₂O)</td>
                         {u7MonthlyEmissions.map((v, idx) => (
-                          <td key={idx} className="px-2 py-2 text-right text-xs text-muted-foreground">{formatNumber(v * 0.02, 4)}</td>
+                          <td key={idx} className={cn("px-2 py-2 text-right text-xs text-muted-foreground", isCurrentYear && idx === CURRENT_MONTH_IDX && "bg-taupe-50/60")}>{formatNumber(v * 0.02, 4)}</td>
                         ))}
                         <td className="px-3 py-2 text-right text-xs text-muted-foreground">{formatNumber(u7TotalEmission * 0.02, 4)}</td>
                       </tr>
@@ -1486,8 +1521,8 @@ export default function Scope3Page() {
                   </table>
                 </div>
 
-                {/* 직원별 상세 (거리 등록 직원만) */}
-                {u7EmployeesWithDistance.length > 0 && (
+                {/* 직원별 상세 (선택 배출원 매핑 직원) */}
+                {u7SelectedEmployees.length > 0 && (
                   <div className="rounded-xl border border-border bg-card">
                     <div className="border-b border-border px-4 py-2.5">
                       <h3 className="text-xs font-medium text-foreground">직원별 통근 배출량 (일 기준)</h3>
@@ -1504,21 +1539,20 @@ export default function Scope3Page() {
                           </tr>
                         </thead>
                         <tbody>
-                          {u7EmployeesWithDistance.map((emp) => {
+                          {u7SelectedEmployees.map((emp) => {
+                            const empT = normalizeTransport(emp.commuteTransport, emp.fuel) as CommuteTransportType;
+                            const empF = normalizeFuel(emp.fuel, empT);
                             const daily = calcEmployeeDailyEmission(
                               emp.commuteDistanceKm,
-                              emp.commuteTransport as CommuteTransportType | undefined,
-                              emp.fuel,
+                              empT,
+                              empF || undefined,
                             );
                             return (
                               <tr key={emp.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
                                 <td className="px-3 py-1.5">{emp.name}</td>
                                 <td className="px-3 py-1.5 text-muted-foreground">{emp.department ?? "-"}</td>
                                 <td className="px-3 py-1.5 text-muted-foreground">
-                                  {emp.commuteTransport === "car" ? `자가용${emp.fuel ? ` (${emp.fuel})` : ""}` :
-                                   emp.commuteTransport === "public" ? "대중교통" :
-                                   emp.commuteTransport === "ev" ? "전기·수소" :
-                                   emp.commuteTransport === "walk_bike" ? "도보·자전거" : "-"}
+                                  {getTransportLabel(empT)}{empF ? ` (${empF})` : ""}
                                 </td>
                                 <td className="px-3 py-1.5 text-right">{emp.commuteDistanceKm?.toFixed(1)}</td>
                                 <td className="px-3 py-1.5 text-right font-medium">{(daily * 1000).toFixed(3)}</td>
@@ -1532,9 +1566,40 @@ export default function Scope3Page() {
                 )}
 
                 {u7EmployeesWithDistance.length === 0 && !employeesLoading && (
-                  <div className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-xs text-muted-foreground">
-                    출퇴근 거리가 등록된 직원이 없습니다. <br />
-                    설정 &gt; 직원명부에서 거리를 계산하거나 직접 입력해 주세요.
+                  <div className="rounded-xl border border-dashed border-border px-4 py-6 text-center space-y-3">
+                    <p className="text-xs text-muted-foreground">
+                      출퇴근 거리가 등록된 직원이 없습니다.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (isCalculatingDistance) return;
+                        setIsCalculatingDistance(true);
+                        try {
+                          const res = await fetch("/api/distance", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ worksiteId: selectedWorksiteId || undefined }),
+                          });
+                          const data = await res.json();
+                          if (!res.ok) {
+                            alert(data.error);
+                            return;
+                          }
+                          alert(`거리 계산 완료: ${data.updated}명 성공, ${data.failed}명 실패`);
+                          queryClient.invalidateQueries({ queryKey: ["employees"] });
+                        } finally {
+                          setIsCalculatingDistance(false);
+                        }
+                      }}
+                      disabled={isCalculatingDistance}
+                      className="rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                    >
+                      {isCalculatingDistance ? "거리 계산 중..." : "카카오 API로 거리 일괄 계산"}
+                    </button>
+                    <p className="text-[10px] text-muted-foreground">
+                      설정 &gt; API 키 관리에서 카카오 API 키를 먼저 등록하세요.
+                    </p>
                   </div>
                 )}
               </div>
@@ -1545,9 +1610,12 @@ export default function Scope3Page() {
                 <thead>
                   <tr className="border-b border-border bg-muted/40 text-xs text-muted-foreground">
                     <th className="w-24 px-3 py-2 text-left font-medium">구분</th>
-                    {MONTH_LABELS.map((label) => (
-                      <th key={label} className="px-1 py-2 text-right font-medium">{label}</th>
-                    ))}
+                    {MONTH_LABELS.map((label, idx) => {
+                      const isCurrent = isCurrentYear && idx === CURRENT_MONTH_IDX;
+                      return (
+                        <th key={label} className={cn("px-1 py-2 text-right font-medium", isCurrent && "bg-taupe-100/60 text-foreground")}>{label}</th>
+                      );
+                    })}
                     <th className="w-24 px-3 py-2 text-right font-medium">합계</th>
                   </tr>
                 </thead>
@@ -1557,7 +1625,7 @@ export default function Scope3Page() {
                       활동량{selectedActivity ? ` (${selectedActivity.unit})` : ""}
                     </td>
                     {MONTH_LABELS.map((_, idx) => (
-                      <td key={idx} className="px-1 py-2 text-right">
+                      <td key={idx} className={cn("px-1 py-2 text-right", isCurrentYear && idx === CURRENT_MONTH_IDX && "bg-taupe-50/60")}>
                         <input
                           type="number"
                           min={0}
@@ -1579,28 +1647,28 @@ export default function Scope3Page() {
                   <tr className="border-b border-border/60">
                     <td className="px-3 py-2 text-xs font-medium">배출량 (tCO₂e)</td>
                     {emissions.map((v, idx) => (
-                      <td key={idx} className="px-2 py-2 text-right text-xs">{formatNumber(v, 2)}</td>
+                      <td key={idx} className={cn("px-2 py-2 text-right text-xs", isCurrentYear && idx === CURRENT_MONTH_IDX && "bg-taupe-50/60")}>{formatNumber(v, 2)}</td>
                     ))}
                     <td className="px-3 py-2 text-right text-xs font-semibold">{formatNumber(totalEmission, 2)} tCO₂e</td>
                   </tr>
                   <tr className="border-b border-border/60 bg-muted/20">
                     <td className="px-3 py-2 text-xs text-muted-foreground pl-5">CO₂ (tCO₂)</td>
                     {gasEmissions.co2.map((v, idx) => (
-                      <td key={idx} className="px-2 py-2 text-right text-xs text-muted-foreground">{formatNumber(v, 3)}</td>
+                      <td key={idx} className={cn("px-2 py-2 text-right text-xs text-muted-foreground", isCurrentYear && idx === CURRENT_MONTH_IDX && "bg-taupe-50/60")}>{formatNumber(v, 3)}</td>
                     ))}
                     <td className="px-3 py-2 text-right text-xs text-muted-foreground">{formatNumber(gasEmissions.co2.reduce((s, v) => s + v, 0), 3)}</td>
                   </tr>
                   <tr className="border-b border-border/60 bg-muted/20">
                     <td className="px-3 py-2 text-xs text-muted-foreground pl-5">CH₄ (tCH₄)</td>
                     {gasEmissions.ch4.map((v, idx) => (
-                      <td key={idx} className="px-2 py-2 text-right text-xs text-muted-foreground">{formatNumber(v, 3)}</td>
+                      <td key={idx} className={cn("px-2 py-2 text-right text-xs text-muted-foreground", isCurrentYear && idx === CURRENT_MONTH_IDX && "bg-taupe-50/60")}>{formatNumber(v, 3)}</td>
                     ))}
                     <td className="px-3 py-2 text-right text-xs text-muted-foreground">{formatNumber(gasEmissions.ch4.reduce((s, v) => s + v, 0), 3)}</td>
                   </tr>
                   <tr className="bg-muted/20">
                     <td className="px-3 py-2 text-xs text-muted-foreground pl-5">N₂O (tN₂O)</td>
                     {gasEmissions.n2o.map((v, idx) => (
-                      <td key={idx} className="px-2 py-2 text-right text-xs text-muted-foreground">{formatNumber(v, 3)}</td>
+                      <td key={idx} className={cn("px-2 py-2 text-right text-xs text-muted-foreground", isCurrentYear && idx === CURRENT_MONTH_IDX && "bg-taupe-50/60")}>{formatNumber(v, 3)}</td>
                     ))}
                     <td className="px-3 py-2 text-right text-xs text-muted-foreground">{formatNumber(gasEmissions.n2o.reduce((s, v) => s + v, 0), 3)}</td>
                   </tr>

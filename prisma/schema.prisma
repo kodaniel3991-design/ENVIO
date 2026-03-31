@@ -158,6 +158,7 @@ model Organization {
   scope3Enabled    Boolean    @default(true) @map("scope3_enabled")
   scope3Categories     String?    @map("scope3_categories") @db.Text
   selectedFrameworks   String?    @map("selected_frameworks") @db.Text
+  distanceApiSettings  String?    @map("distance_api_settings") @db.Text
   createdAt            DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @default(now()) @updatedAt @map("updated_at")
   worksites        Worksite[]

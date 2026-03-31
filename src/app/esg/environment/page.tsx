@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { EsgSubNav } from "@/components/esg/esg-sub-nav";
 import { EnvironmentKpiCards } from "@/components/environment-data/environment-kpi-cards";
@@ -20,29 +21,58 @@ const EnvironmentTrendCharts = dynamic(
 );
 import { Scope3Breakdown } from "@/components/environment-data/scope3-breakdown";
 import {
-  MOCK_ENV_KPI,
   MOCK_AI_INSIGHT,
   MOCK_ENV_TABLE_ROWS,
   MOCK_DATA_QUALITY,
-  MOCK_SCOPE3_BREAKDOWN,
-  MOCK_MONTHLY_EMISSIONS,
-  MOCK_ENERGY_TREND,
   getDetailById,
 } from "@/lib/mock/environment-data";
 import type { EnvironmentDataRow, EnvironmentDataDetail } from "@/types/environment-data";
 
 /**
  * 환경 데이터 페이지
- * 데이터 관리 > ESG 데이터 > 환경 데이터
- * - KPI 요약, AI 인사이트, 필터, 테이블, 상세 드로어, 데이터 품질, 추이 차트, Scope 3 세부
+ * KPI 요약, 월별 추이, Scope 3 세부는 실제 DB 데이터를 사용합니다.
  */
 export default function EnvironmentPage() {
+  const currentYear = new Date().getFullYear();
   const [selectedRow, setSelectedRow] = useState<EnvironmentDataRow | null>(null);
   const [entryModalOpen, setEntryModalOpen] = useState(false);
   const detail: EnvironmentDataDetail | null = useMemo(
     () => (selectedRow ? getDetailById(selectedRow.id) : null),
     [selectedRow]
   );
+
+  // 실제 DB 데이터: KPI 요약
+  const { data: kpiItems = [] } = useQuery({
+    queryKey: ["env-kpi", currentYear],
+    queryFn: async () => {
+      const res = await fetch(`/api/environment?type=kpi&year=${currentYear}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+
+  // 실제 DB 데이터: 월별 배출량
+  const { data: monthlyEmissions = [] } = useQuery({
+    queryKey: ["env-monthly", currentYear],
+    queryFn: async () => {
+      const res = await fetch(`/api/environment?type=monthly&year=${currentYear}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+
+  // 실제 DB 데이터: Scope 3 카테고리별
+  const { data: scope3Items = [] } = useQuery({
+    queryKey: ["env-scope3-breakdown", currentYear],
+    queryFn: async () => {
+      const res = await fetch(`/api/environment?type=scope3-breakdown&year=${currentYear}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 2,
+  });
 
   return (
     <>
@@ -54,9 +84,9 @@ export default function EnvironmentPage() {
       </PageHeader>
 
       <div className="mt-8 space-y-8">
-        {/* 1. KPI Summary Section */}
+        {/* 1. KPI Summary — 실제 DB 데이터 */}
         <CollapsibleSection title="KPI 요약" defaultOpen>
-          <EnvironmentKpiCards items={MOCK_ENV_KPI} />
+          <EnvironmentKpiCards items={kpiItems} />
         </CollapsibleSection>
 
         {/* 2. AI Insight Panel */}
@@ -80,7 +110,7 @@ export default function EnvironmentPage() {
           />
         </section>
 
-        {/* 5. Detail Drawer (우측 슬라이드) */}
+        {/* 5. Detail Drawer */}
         {selectedRow && (
           <EnvironmentDetailDrawer
             detail={detail}
@@ -88,26 +118,22 @@ export default function EnvironmentPage() {
           />
         )}
 
-        {/* 6. Data Quality Section */}
+        {/* 6. Data Quality */}
         <CollapsibleSection title="데이터 품질">
           <DataQualityCards items={MOCK_DATA_QUALITY} />
         </CollapsibleSection>
 
-        {/* 7. Trend Analytics Section */}
+        {/* 7. Trend Analytics — 실제 DB 데이터 */}
         <CollapsibleSection title="추이 분석">
-          <EnvironmentTrendCharts
-            monthlyEmissions={MOCK_MONTHLY_EMISSIONS}
-            energyTrend={MOCK_ENERGY_TREND}
-          />
+          <EnvironmentTrendCharts monthlyEmissions={monthlyEmissions} />
         </CollapsibleSection>
 
-        {/* 8. Scope 3 Breakdown Section */}
+        {/* 8. Scope 3 Breakdown — 실제 DB 데이터 */}
         <CollapsibleSection title="Scope 3 세부">
-          <Scope3Breakdown items={MOCK_SCOPE3_BREAKDOWN} />
+          <Scope3Breakdown items={scope3Items} />
         </CollapsibleSection>
       </div>
 
-      {/* 데이터 입력 모달 */}
       <EnvironmentDataEntryModal
         open={entryModalOpen}
         onClose={() => setEntryModalOpen(false)}
