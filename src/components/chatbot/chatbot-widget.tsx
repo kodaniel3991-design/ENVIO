@@ -205,7 +205,7 @@ export function ChatbotWidget() {
         className={cn(
           "fixed z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105",
           isDark ? "bg-gray-800 text-green-400" : "bg-primary text-primary-foreground",
-          isRight ? "bottom-6 right-6" : "bottom-6 left-6"
+          isRight ? "bottom-14 right-6" : "bottom-14 left-6"
         )}
         title={config.botName ?? "챗봇"}
       >
@@ -221,7 +221,7 @@ export function ChatbotWidget() {
         minimized ? "h-12" : "h-[500px]",
         "w-[380px]",
         isDark ? "border-gray-700 bg-gray-900 text-gray-100" : "border-border bg-card text-foreground",
-        isRight ? "bottom-6 right-6" : "bottom-6 left-6"
+        isRight ? "bottom-14 right-6" : "bottom-14 left-6"
       )}
     >
       {/* 헤더 */}
