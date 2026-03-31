@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getAuthOrg, AuthError } from "@/lib/auth";
 
 // 교통수단별 km당 배출계수 (tCO₂e/km) — commute-factors.ts와 동기화
 const COMMUTE_FACTOR_PER_KM: Record<string, number> = {
@@ -22,13 +23,14 @@ function getKmFactor(transport: string | null, fuel: string | null): number {
 }
 
 // 공통: 스코프별 배출량 집계 헬퍼
-async function calcScopeEmissions(year: number) {
-  // 1) 일반 배출량 (activity × emission_factor)
+async function calcScopeEmissions(year: number, organizationId: number) {
+  // 1) 일반 배출량 (activity × emission_factor) — 자기 조직만
   const rows = await prisma.$queryRaw<{ scope: number; month: number; total: number }[]>`
     SELECT ef.scope, ad.month,
            SUM(ad.activity_value * COALESCE(em.co2_factor, 0)) AS total
     FROM activity_data ad
     JOIN emission_facilities ef ON ad.facility_id = ef.id
+    JOIN worksites ws ON ef.worksite_id = ws.id AND ws.organization_id = ${organizationId}
     LEFT JOIN LATERAL (
       SELECT co2_factor FROM emission_factor_master
       WHERE fuel_code = COALESCE(ef.fuel_type, ef.energy_type)
@@ -39,9 +41,15 @@ async function calcScopeEmissions(year: number) {
     GROUP BY ef.scope, ad.month
   `;
 
-  // 2) Scope 3 U7 (직원 출퇴근): 출근일수 × 직원별 (편도거리 × 2 × km배출계수)
+  // 자기 조직 사업장 ID 목록
+  const orgWorksiteIds = (await prisma.worksite.findMany({
+    where: { organizationId },
+    select: { id: true },
+  })).map((w) => w.id);
+
+  // 2) Scope 3 U7 (직원 출퇴근)
   const u7Facilities = await prisma.emissionFacility.findMany({
-    where: { scope: 3, categoryId: "u7" },
+    where: { scope: 3, categoryId: "u7", worksiteId: { in: orgWorksiteIds } },
   });
   if (u7Facilities.length > 0) {
     const u7Activity = await prisma.activityData.findMany({
@@ -92,6 +100,8 @@ async function calcScopeEmissions(year: number) {
 // GET /api/dashboard?type=summary|scope-breakdown|trends|kpis|trend-data|scope-donut|offset-summary|top-vendors|insights|notifications
 export async function GET(req: NextRequest) {
   try {
+    const { organizationId } = await getAuthOrg();
+    const orgFilter = { organizationId };
     const type = req.nextUrl.searchParams.get("type") ?? "summary";
     const year = parseInt(req.nextUrl.searchParams.get("year") ?? String(new Date().getFullYear()));
 
@@ -101,6 +111,7 @@ export async function GET(req: NextRequest) {
                SUM(ad.activity_value * COALESCE(em.co2_factor, 0)) AS total
         FROM activity_data ad
         JOIN emission_facilities ef ON ad.facility_id = ef.id
+        JOIN worksites ws ON ef.worksite_id = ws.id AND ws.organization_id = ${organizationId}
         LEFT JOIN LATERAL (
           SELECT co2_factor FROM emission_factor_master
           WHERE fuel_code = COALESCE(ef.fuel_type, ef.energy_type)
@@ -116,16 +127,16 @@ export async function GET(req: NextRequest) {
       }
 
       // KPI 달성률
-      const kpiTotal = await prisma.kpiMaster.count();
-      const kpiEntered = await prisma.kpiPerformance.count();
+      const kpiTotal = await prisma.kpiMaster.count({ where: orgFilter });
+      const kpiEntered = await prisma.kpiPerformance.count({ where: orgFilter });
 
       // ESG 데이터 입력율
-      const esgTotal = await prisma.esgMetric.count();
-      const esgFilled = await prisma.esgMetric.count({ where: { value: { not: null } } });
+      const esgTotal = await prisma.esgMetric.count({ where: orgFilter });
+      const esgFilled = await prisma.esgMetric.count({ where: { ...orgFilter, value: { not: null } } });
 
       // 협력사 현황
-      const vendorTotal = await prisma.vendor.count();
-      const vendorActive = await prisma.vendor.count({ where: { status: "active" } });
+      const vendorTotal = await prisma.vendor.count({ where: orgFilter });
+      const vendorActive = await prisma.vendor.count({ where: { ...orgFilter, status: "active" } });
 
       const scope1 = scopeMap[1] ?? 0;
       const scope2 = scopeMap[2] ?? 0;
@@ -159,6 +170,7 @@ export async function GET(req: NextRequest) {
                SUM(ad.activity_value * COALESCE(em.co2_factor, 0)) AS total
         FROM activity_data ad
         JOIN emission_facilities ef ON ad.facility_id = ef.id
+        JOIN worksites ws ON ef.worksite_id = ws.id AND ws.organization_id = ${organizationId}
         LEFT JOIN LATERAL (
           SELECT co2_factor FROM emission_factor_master
           WHERE fuel_code = COALESCE(ef.fuel_type, ef.energy_type)
@@ -181,6 +193,7 @@ export async function GET(req: NextRequest) {
                SUM(ad.activity_value * COALESCE(em.co2_factor, 0)) AS total
         FROM activity_data ad
         JOIN emission_facilities ef ON ad.facility_id = ef.id
+        JOIN worksites ws ON ef.worksite_id = ws.id AND ws.organization_id = ${organizationId}
         LEFT JOIN LATERAL (
           SELECT co2_factor FROM emission_factor_master
           WHERE fuel_code = COALESCE(ef.fuel_type, ef.energy_type)
@@ -203,7 +216,7 @@ export async function GET(req: NextRequest) {
 
     if (type === "kpis") {
       const masters = await prisma.kpiMaster.findMany({
-        where: { reportIncluded: true },
+        where: { ...orgFilter, reportIncluded: true },
         include: {
           targets: true,
           performance: true,
@@ -233,7 +246,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === "trend-data") {
-      const rows = await calcScopeEmissions(year);
+      const rows = await calcScopeEmissions(year, organizationId);
       const monthNames = ["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
       const months: Record<number, any> = {};
       for (let m = 1; m <= 12; m++) {
@@ -247,7 +260,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === "scope-donut") {
-      const rows = await calcScopeEmissions(year);
+      const rows = await calcScopeEmissions(year, organizationId);
       const scopeTotals: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
       for (const r of rows) {
         scopeTotals[r.scope] = (scopeTotals[r.scope] || 0) + (parseFloat(String(r.total)) || 0);
@@ -262,12 +275,12 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === "offset-summary") {
-      const rows = await calcScopeEmissions(year);
+      const rows = await calcScopeEmissions(year, organizationId);
       let totalEmissions = 0;
       for (const r of rows) totalEmissions += parseFloat(String(r.total)) || 0;
 
       const redProjects = await prisma.reductionProject.findMany({
-        where: { status: { in: ["in_progress", "completed"] } },
+        where: { ...orgFilter, status: { in: ["in_progress", "completed"] } },
         select: { actualReductionMt: true },
       });
       const offsetT = redProjects.reduce((s, p) => s + (p.actualReductionMt ? parseFloat(String(p.actualReductionMt)) : 0), 0);
@@ -280,7 +293,7 @@ export async function GET(req: NextRequest) {
 
     if (type === "top-vendors") {
       const vendors = await prisma.vendor.findMany({
-        where: { status: "active" },
+        where: { ...orgFilter, status: "active" },
         include: {
           submissions: { orderBy: { createdAt: "desc" }, take: 1 },
           esgScores: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -303,7 +316,7 @@ export async function GET(req: NextRequest) {
     if (type === "insights") {
       const insights: any[] = [];
 
-      const rows = await calcScopeEmissions(year);
+      const rows = await calcScopeEmissions(year, organizationId);
       let totalNow = 0;
       for (const r of rows) totalNow += parseFloat(String(r.total)) || 0;
 
@@ -320,7 +333,7 @@ export async function GET(req: NextRequest) {
 
       // KPI 미달 항목
       const kpiAlerts = await prisma.kpiMaster.findMany({
-        where: { category: { in: ["carbon", "environment"] } },
+        where: { ...orgFilter, category: { in: ["carbon", "environment"] } },
         include: {
           targets: { take: 1 },
           performance: { take: 1 },
@@ -344,7 +357,7 @@ export async function GET(req: NextRequest) {
 
       // 감축 프로젝트
       const redProjects = await prisma.reductionProject.findMany({
-        where: { status: "in_progress" },
+        where: { ...orgFilter, status: "in_progress" },
         select: { name: true, expectedReductionMt: true, actualReductionMt: true },
       });
       if (redProjects.length > 0) {
@@ -368,7 +381,7 @@ export async function GET(req: NextRequest) {
 
       // 마감 임박 컴플라이언스
       const compItems = await prisma.complianceItem.findMany({
-        where: { status: { not: "compliant" } },
+        where: { ...orgFilter, status: { not: "compliant" } },
         orderBy: { dueDate: "asc" },
         take: 3,
       });
@@ -385,7 +398,7 @@ export async function GET(req: NextRequest) {
 
       // ESG 미검증 항목
       const pendingCnt = await prisma.esgMetric.count({
-        where: { status: { in: ["pending", "estimated"] } },
+        where: { ...orgFilter, status: { in: ["pending", "estimated"] } },
       });
       if (pendingCnt > 0) {
         notifications.push({
@@ -400,7 +413,7 @@ export async function GET(req: NextRequest) {
 
       // 초대 대기 협력사
       const vpCnt = await prisma.vendor.count({
-        where: { status: { in: ["invited", "pending"] } },
+        where: { ...orgFilter, status: { in: ["invited", "pending"] } },
       });
       if (vpCnt > 0) {
         notifications.push({
@@ -418,6 +431,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   } catch (err: any) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error("[GET /api/dashboard]", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

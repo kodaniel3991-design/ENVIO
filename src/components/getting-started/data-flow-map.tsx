@@ -224,7 +224,7 @@ export function DataFlowMap() {
         </div>
       )}
 
-      {/* 하단: ReactFlow 마인드맵 */}
+      {/* 하단: ReactFlow 흐름도 */}
       <DataFlowMindMap />
     </div>
   );

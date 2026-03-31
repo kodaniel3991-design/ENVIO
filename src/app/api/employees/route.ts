@@ -1,14 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getAuthOrg, AuthError } from "@/lib/auth";
 
-// GET /api/employees?worksiteId=xxx  (worksiteId 생략 시 전체)
+// GET /api/employees?worksiteId=xxx  (worksiteId 생략 시 자기 조직 전체)
 export async function GET(req: NextRequest) {
   try {
+    const { organizationId } = await getAuthOrg();
+    const orgWorksiteIds = (await prisma.worksite.findMany({
+      where: { organizationId },
+      select: { id: true },
+    })).map((w) => w.id);
+
     const { searchParams } = new URL(req.url);
     const worksiteId = searchParams.get("worksiteId");
 
+    // worksiteId 소유권 검증
+    if (worksiteId && !orgWorksiteIds.includes(worksiteId)) {
+      return NextResponse.json({ error: "접근 권한이 없는 사업장입니다." }, { status: 403 });
+    }
+
     const employees = await prisma.employee.findMany({
-      where: worksiteId ? { worksiteId } : undefined,
+      where: worksiteId ? { worksiteId } : { worksiteId: { in: orgWorksiteIds } },
       include: { worksite: { select: { name: true } } },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     });
@@ -59,6 +71,7 @@ export async function GET(req: NextRequest) {
       }))
     );
   } catch (err: any) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error("[GET /api/employees]", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

@@ -93,7 +93,7 @@ export default function GettingStartedPage() {
         </div>
       )}
 
-      {/* 데이터 흐름 마인드맵 */}
+      {/* 데이터 흐름도 */}
       <FlowMapSection />
 
       {/* 단계별 카드 */}

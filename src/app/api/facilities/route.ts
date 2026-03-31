@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getAuthOrg, AuthError } from "@/lib/auth";
 import { autoMapUnlinkedKpis } from "@/lib/kpi-auto-mapping";
+
+/** 로그인 사용자 조직의 사업장 ID 목록 */
+async function getOrgWorksiteIds(organizationId: number): Promise<string[]> {
+  const ws = await prisma.worksite.findMany({
+    where: { organizationId },
+    select: { id: true },
+  });
+  return ws.map((w) => w.id);
+}
 
 // GET /api/facilities?scope=1&category=fixed&worksiteId=ws-1
 export async function GET(req: NextRequest) {
@@ -8,12 +18,24 @@ export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get("category");
   const worksiteId = req.nextUrl.searchParams.get("worksiteId");
   try {
+    const { organizationId } = await getAuthOrg();
+    const orgWorksiteIds = await getOrgWorksiteIds(organizationId);
+
     const where: any = {};
     if (scope) {
       where.scope = parseInt(scope);
       if (category) where.categoryId = category;
     }
-    if (worksiteId) where.worksiteId = worksiteId;
+    // worksiteId가 지정되면 자기 조직 소속인지 검증
+    if (worksiteId) {
+      if (!orgWorksiteIds.includes(worksiteId)) {
+        return NextResponse.json({ error: "접근 권한이 없는 사업장입니다." }, { status: 403 });
+      }
+      where.worksiteId = worksiteId;
+    } else {
+      // worksiteId 미지정 시 자기 조직 사업장만 필터
+      where.worksiteId = { in: orgWorksiteIds };
+    }
 
     const facilities = await prisma.emissionFacility.findMany({
       where,
@@ -41,6 +63,7 @@ export async function GET(req: NextRequest) {
       }))
     );
   } catch (err: any) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error("[GET /api/facilities]", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -49,6 +72,9 @@ export async function GET(req: NextRequest) {
 // POST /api/facilities — 전체 목록을 통째로 저장 (upsert)
 export async function POST(req: NextRequest) {
   try {
+    const { organizationId } = await getAuthOrg();
+    const orgWorksiteIds = await getOrgWorksiteIds(organizationId);
+
     const body: {
       scope: number;
       categoryId?: string;
@@ -69,11 +95,18 @@ export async function POST(req: NextRequest) {
 
     const categoryId = body.categoryId ?? "fixed";
     const worksiteId = body.worksiteId ?? null;
+
+    // 사업장 소유권 검증
+    if (worksiteId && !orgWorksiteIds.includes(worksiteId)) {
+      return NextResponse.json({ error: "접근 권한이 없는 사업장입니다." }, { status: 403 });
+    }
+
     const newIds = body.rows.map((r) => r.id);
 
-    // 삭제 조건: scope + category + worksite
     const deleteWhere: any = { scope: body.scope, categoryId };
     if (worksiteId) deleteWhere.worksiteId = worksiteId;
+    // 자기 조직 사업장 범위 내에서만 삭제
+    deleteWhere.worksiteId = worksiteId ? worksiteId : { in: orgWorksiteIds };
 
     if (newIds.length > 0) {
       await prisma.emissionFacility.deleteMany({
@@ -117,11 +150,11 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 시설 저장 후, 미연결 KPI에 자동 매핑 규칙 적용
     const autoMapped = await autoMapUnlinkedKpis();
 
     return NextResponse.json({ ok: true, autoMapped });
   } catch (err: any) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error("[POST /api/facilities]", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

@@ -2,16 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { randomUUID } from "crypto";
 import { resolveAutoCalcRule, autoMapUnlinkedKpis } from "@/lib/kpi-auto-mapping";
+import { getAuthOrg, AuthError } from "@/lib/auth";
 
 // GET /api/kpi?type=master|targets|performance|change-log
 export async function GET(req: NextRequest) {
   try {
+    const { organizationId } = await getAuthOrg();
+    const orgFilter = { organizationId };
     const type = req.nextUrl.searchParams.get("type") ?? "master";
 
     if (type === "master") {
       const domain = req.nextUrl.searchParams.get("domain");
       const masters = await prisma.kpiMaster.findMany({
-        where: domain ? { esgDomain: domain } : undefined,
+        where: { ...orgFilter, ...(domain ? { esgDomain: domain } : {}) },
         orderBy: { code: "asc" },
       });
       return NextResponse.json(
@@ -33,7 +36,7 @@ export async function GET(req: NextRequest) {
     if (type === "targets") {
       const period = req.nextUrl.searchParams.get("period");
       const targets = await prisma.kpiTarget.findMany({
-        where: period ? { period } : undefined,
+        where: { ...orgFilter, ...(period ? { period } : {}) },
         include: { kpi: true },
         orderBy: { kpi: { code: "asc" } },
       });
@@ -56,7 +59,7 @@ export async function GET(req: NextRequest) {
     if (type === "performance") {
       const period = req.nextUrl.searchParams.get("period");
       const performances = await prisma.kpiPerformance.findMany({
-        where: period ? { period } : undefined,
+        where: { ...orgFilter, ...(period ? { period } : {}) },
         include: {
           kpi: {
             include: { targets: true },
@@ -90,6 +93,7 @@ export async function GET(req: NextRequest) {
 
     if (type === "change-log") {
       const logs = await prisma.kpiChangeLog.findMany({
+        where: orgFilter,
         include: { kpi: true },
         orderBy: { changedAt: "desc" },
       });
@@ -111,7 +115,7 @@ export async function GET(req: NextRequest) {
       const period = req.nextUrl.searchParams.get("period") ?? String(new Date().getFullYear());
       const domain = req.nextUrl.searchParams.get("domain");
       const masters = await prisma.kpiMaster.findMany({
-        where: domain ? { esgDomain: domain } : undefined,
+        where: { ...orgFilter, ...(domain ? { esgDomain: domain } : {}) },
         include: {
           targets: { where: { period } },
           performance: { where: { period } },
@@ -148,6 +152,7 @@ export async function GET(req: NextRequest) {
     if (type === "summary") {
       const period = req.nextUrl.searchParams.get("period") ?? String(new Date().getFullYear());
       const masters = await prisma.kpiMaster.findMany({
+        where: orgFilter,
         include: {
           targets: { where: { period } },
           performance: { where: { period } },
@@ -181,7 +186,7 @@ export async function GET(req: NextRequest) {
       const scopeNum = parseInt(scopeParam);
 
       const allAuto = await prisma.kpiMaster.findMany({
-        where: { calcType: "auto" },
+        where: { ...orgFilter, calcType: "auto" },
         orderBy: { code: "asc" },
       });
 
@@ -215,6 +220,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   } catch (err: any) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error("[GET /api/kpi]", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -223,6 +229,7 @@ export async function GET(req: NextRequest) {
 // POST /api/kpi — CRUD for KPI master, targets, performance
 export async function POST(req: NextRequest) {
   try {
+    const { organizationId } = await getAuthOrg();
     const body = await req.json();
     const { action } = body;
 
@@ -242,6 +249,7 @@ export async function POST(req: NextRequest) {
           },
           create: {
             id: item.id,
+            organizationId,
             esgDomain: item.esgDomain || null,
             code: item.code,
             name: item.name,
@@ -266,6 +274,7 @@ export async function POST(req: NextRequest) {
           },
           create: {
             id: item.id,
+            organizationId,
             kpiId: item.kpiId,
             period: item.period,
             targetValue: item.targetValue,
@@ -287,6 +296,7 @@ export async function POST(req: NextRequest) {
           },
           create: {
             id: item.id,
+            organizationId,
             kpiId: item.kpiId,
             period: item.period,
             actualValue: item.actualValue,
@@ -330,6 +340,7 @@ export async function POST(req: NextRequest) {
           await prisma.kpiMaster.create({
             data: {
               id: randomUUID(),
+              organizationId,
               code: item.code,
               name: item.name,
               esgDomain: item.esgDomain,
@@ -360,6 +371,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (err: any) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error("[POST /api/kpi]", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

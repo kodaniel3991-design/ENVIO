@@ -7,6 +7,7 @@ interface AuthUser {
   email: string;
   name: string;
   isPlatformAdmin: boolean;
+  organizationId: number | null;
 }
 
 async function fetchMe(): Promise<AuthUser> {

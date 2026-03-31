@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getAuthOrg, AuthError } from "@/lib/auth";
 
 // GET /api/org-structure
 export async function GET() {
   try {
+    const { organizationId } = await getAuthOrg();
+    const orgFilter = { organizationId };
     const [departments, teams, positions, duties] = await Promise.all([
-      prisma.orgDepartment.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
-      prisma.orgTeam.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
-      prisma.orgPosition.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
-      prisma.orgDuty.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
+      prisma.orgDepartment.findMany({ where: orgFilter, orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
+      prisma.orgTeam.findMany({ where: orgFilter, orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
+      prisma.orgPosition.findMany({ where: orgFilter, orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
+      prisma.orgDuty.findMany({ where: orgFilter, orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }),
     ]);
 
     return NextResponse.json({
@@ -46,6 +49,7 @@ export async function GET() {
 // POST /api/org-structure
 export async function POST(req: NextRequest) {
   try {
+    const { organizationId } = await getAuthOrg();
     const body = await req.json();
     const { type, action, item } = body as {
       type: "department" | "team" | "position" | "duty";
@@ -70,7 +74,7 @@ export async function POST(req: NextRequest) {
       await prisma.orgDepartment.upsert({
         where: { id: item.id },
         update: { name: item.name, sortOrder: item.sort_order ?? 0 },
-        create: { id: item.id, name: item.name, sortOrder: item.sort_order ?? 0 },
+        create: { id: item.id, organizationId, name: item.name, sortOrder: item.sort_order ?? 0 },
       });
     } else if (type === "team") {
       await prisma.orgTeam.upsert({
@@ -83,7 +87,7 @@ export async function POST(req: NextRequest) {
           sortOrder: item.sort_order ?? 0,
         },
         create: {
-          id: item.id,
+          id: item.id, organizationId,
           departmentId: item.departmentId ?? null,
           name: item.name,
           leaderName: item.leaderName ?? null,
@@ -95,13 +99,13 @@ export async function POST(req: NextRequest) {
       await prisma.orgPosition.upsert({
         where: { id: item.id },
         update: { name: item.name, sortOrder: item.sort_order ?? 0 },
-        create: { id: item.id, name: item.name, sortOrder: item.sort_order ?? 0 },
+        create: { id: item.id, organizationId, name: item.name, sortOrder: item.sort_order ?? 0 },
       });
     } else if (type === "duty") {
       await prisma.orgDuty.upsert({
         where: { id: item.id },
         update: { name: item.name, sortOrder: item.sort_order ?? 0 },
-        create: { id: item.id, name: item.name, sortOrder: item.sort_order ?? 0 },
+        create: { id: item.id, organizationId, name: item.name, sortOrder: item.sort_order ?? 0 },
       });
     }
 

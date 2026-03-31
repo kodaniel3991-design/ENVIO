@@ -317,6 +317,13 @@ export const ROUTE_LABELS: Record<string, string> = {
   "/settings/employee-roster": "임/직원 관리",
   "/settings/api-keys": "API 키 관리",
   "/settings/system": "시스템 설정",
+  "/getting-started": "진행 현황",
+  "/getting-started/data-flow": "데이터 흐름 구조",
+  "/getting-started/organization": "① 조직 설정",
+  "/getting-started/facility": "② 사업장 설정",
+  "/getting-started/scope": "③ Scope 설정",
+  "/getting-started/framework": "④ 공시 기준 선택",
+  "/getting-started/kpi": "⑤ KPI 선택",
 };
 
 /** pathname이 href와 일치하거나 해당 하위 경로인지 */

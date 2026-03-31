@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getAuthOrg, AuthError } from "@/lib/auth";
 
 /**
  * CalcRule JSON 형태:
@@ -27,6 +28,7 @@ export async function GET(
   { params }: { params: { id: string } },
 ) {
   try {
+    const { organizationId } = await getAuthOrg();
     const kpiId = params.id;
     const period = req.nextUrl.searchParams.get("period") ?? String(new Date().getFullYear());
 
@@ -38,7 +40,7 @@ export async function GET(
       },
     });
 
-    if (!kpi) {
+    if (!kpi || kpi.organizationId !== organizationId) {
       return NextResponse.json({ error: "KPI를 찾을 수 없습니다" }, { status: 404 });
     }
 
@@ -77,6 +79,13 @@ export async function GET(
     if (rule.categories && rule.categories.length > 0) {
       whereClause.categoryId = { in: rule.categories };
     }
+
+    // 자기 조직 사업장의 시설만 조회
+    const orgWorksiteIds = (await prisma.worksite.findMany({
+      where: { organizationId },
+      select: { id: true },
+    })).map((w) => w.id);
+    whereClause.worksiteId = { in: orgWorksiteIds };
 
     const facilities = await prisma.emissionFacility.findMany({
       where: whereClause,
@@ -173,6 +182,7 @@ export async function GET(
       monthlyBreakdown: monthlyBreakdown.map((v: number) => Math.round(v * 100) / 100),
     });
   } catch (err) {
+    if (err instanceof AuthError) return NextResponse.json({ error: (err as AuthError).message }, { status: (err as AuthError).status });
     console.error("[GET /api/kpi/[id]/value]", err);
     return NextResponse.json({ error: "KPI 값 조회 실패" }, { status: 500 });
   }
@@ -186,7 +196,15 @@ export async function PUT(
   { params }: { params: { id: string } },
 ) {
   try {
+    const { organizationId } = await getAuthOrg();
     const kpiId = params.id;
+
+    // 소유권 검증
+    const kpi = await prisma.kpiMaster.findUnique({ where: { id: kpiId }, select: { organizationId: true } });
+    if (!kpi || kpi.organizationId !== organizationId) {
+      return NextResponse.json({ error: "KPI를 찾을 수 없습니다" }, { status: 404 });
+    }
+
     const body = await req.json();
     const { calcType, calcRule } = body;
 
@@ -201,6 +219,7 @@ export async function PUT(
 
     return NextResponse.json({ ok: true });
   } catch (err) {
+    if (err instanceof AuthError) return NextResponse.json({ error: (err as AuthError).message }, { status: (err as AuthError).status });
     console.error("[PUT /api/kpi/[id]/value]", err);
     return NextResponse.json({ error: "KPI 업데이트 실패" }, { status: 500 });
   }

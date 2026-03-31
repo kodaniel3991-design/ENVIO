@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getAuthOrg, AuthError } from "@/lib/auth";
 
 // GET /api/emissions?type=summary|sources|trends
-// 배출량 데이터는 activity_data + emission_factor_master 조인으로 실시간 계산
 export async function GET(req: NextRequest) {
   try {
+    const { organizationId } = await getAuthOrg();
     const type = req.nextUrl.searchParams.get("type") ?? "summary";
     const year = req.nextUrl.searchParams.get("year") ?? String(new Date().getFullYear());
     const yearInt = parseInt(year);
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest) {
                SUM(ad.activity_value * COALESCE(em.co2_factor, 0)) AS total_emissions
         FROM activity_data ad
         JOIN emission_facilities ef ON ad.facility_id = ef.id
+        JOIN worksites ws ON ef.worksite_id = ws.id AND ws.organization_id = ${organizationId}
         LEFT JOIN LATERAL (
           SELECT co2_factor FROM emission_factor_master
           WHERE fuel_code = COALESCE(ef.fuel_type, ef.energy_type)
@@ -35,12 +37,12 @@ export async function GET(req: NextRequest) {
       const scope3 = scopeMap[3] ?? 0;
       const total = scope1 + scope2 + scope3;
 
-      // 전년도 비교
       const prevYear = yearInt - 1;
       const prevRows = await prisma.$queryRaw<{ prev_total: number }[]>`
         SELECT SUM(ad.activity_value * COALESCE(em.co2_factor, 0)) AS prev_total
         FROM activity_data ad
         JOIN emission_facilities ef ON ad.facility_id = ef.id
+        JOIN worksites ws ON ef.worksite_id = ws.id AND ws.organization_id = ${organizationId}
         LEFT JOIN LATERAL (
           SELECT co2_factor FROM emission_factor_master
           WHERE fuel_code = COALESCE(ef.fuel_type, ef.energy_type)
@@ -77,6 +79,7 @@ export async function GET(req: NextRequest) {
           SUM(ad.activity_value) AS total_activity,
           SUM(ad.activity_value * COALESCE(em.co2_factor, 0)) AS total_emissions
         FROM emission_facilities ef
+        JOIN worksites ws ON ef.worksite_id = ws.id AND ws.organization_id = ${organizationId}
         LEFT JOIN activity_data ad ON ad.facility_id = ef.id AND ad.year = ${yearInt}
         LEFT JOIN LATERAL (
           SELECT co2_factor FROM emission_factor_master
@@ -107,6 +110,7 @@ export async function GET(req: NextRequest) {
                SUM(ad.activity_value * COALESCE(em.co2_factor, 0)) AS emissions
         FROM activity_data ad
         JOIN emission_facilities ef ON ad.facility_id = ef.id
+        JOIN worksites ws ON ef.worksite_id = ws.id AND ws.organization_id = ${organizationId}
         LEFT JOIN LATERAL (
           SELECT co2_factor FROM emission_factor_master
           WHERE fuel_code = COALESCE(ef.fuel_type, ef.energy_type)
@@ -139,6 +143,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   } catch (err: any) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error("[GET /api/emissions]", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

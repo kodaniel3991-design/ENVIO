@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getAuthOrg, AuthError } from "@/lib/auth";
 
 // GET /api/esg?domain=environment|social|governance
 export async function GET(req: NextRequest) {
   try {
+    const { organizationId } = await getAuthOrg();
     const domain = req.nextUrl.searchParams.get("domain") ?? "environment";
     const period = req.nextUrl.searchParams.get("period");
 
     const metrics = await prisma.esgMetric.findMany({
       where: {
+        organizationId,
         esgDomain: domain,
         ...(period ? { period } : {}),
       },
@@ -29,6 +32,7 @@ export async function GET(req: NextRequest) {
       }))
     );
   } catch (err: any) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error("[GET /api/esg]", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -37,6 +41,7 @@ export async function GET(req: NextRequest) {
 // POST /api/esg — save metrics
 export async function POST(req: NextRequest) {
   try {
+    const { organizationId } = await getAuthOrg();
     const body = await req.json();
     const { items } = body as { items: any[] };
 
@@ -54,6 +59,7 @@ export async function POST(req: NextRequest) {
         },
         create: {
           id: item.id,
+          organizationId,
           esgDomain: item.esgDomain,
           category: item.category,
           indicatorName: item.indicatorName,
@@ -68,6 +74,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error("[POST /api/esg]", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

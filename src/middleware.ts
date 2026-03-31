@@ -25,6 +25,7 @@ export async function middleware(request: NextRequest) {
     const payload = result.payload as Record<string, unknown>;
 
     const isPlatformAdmin = !!payload.isPlatformAdmin;
+    const organizationId = payload.organizationId as number | null;
 
     // /admin 경로는 플랫폼 관리자만 접근 가능
     if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
@@ -34,11 +35,21 @@ export async function middleware(request: NextRequest) {
         }
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
+      // 플랫폼 관리자는 조직 필터 없이 접근 — 그대로 통과
+      return NextResponse.next();
     }
 
     // 플랫폼 관리자가 /admin 외 페이지 접근 시 /admin으로 리다이렉트
-    if (isPlatformAdmin && !pathname.startsWith("/admin") && !pathname.startsWith("/api/")) {
+    if (isPlatformAdmin && !pathname.startsWith("/api/")) {
       return NextResponse.redirect(new URL("/admin", request.url));
+    }
+
+    // 일반 사용자: organizationId가 없으면 API 접근 차단 (로그인/getting-started 제외)
+    if (!isPlatformAdmin && !organizationId) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "소속 조직이 없습니다. 관리자에게 문의하세요." }, { status: 403 });
+      }
+      // 페이지 접근은 허용 (getting-started에서 조직을 설정할 수 있으므로)
     }
 
     return NextResponse.next();
@@ -50,5 +61,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon\\.ico|favicon\\.svg|logo\\.svg).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon\\.ico|favicon\\.svg|logo\\.svg|ESG_ON_logo_header\\.png).*)"],
 };

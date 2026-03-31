@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
       email: payload.email,
       name: payload.name,
       isPlatformAdmin: payload.isPlatformAdmin ?? false,
+      organizationId: payload.organizationId ?? null,
     });
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useWizardStore, type Industry } from "../wizard-store";
 import { getAiRecommendation } from "@/lib/ai-recommendations";
@@ -14,11 +14,33 @@ const REVENUE_RANGES = ["50억 미만", "50~300억", "300~1000억", "1000억~1�
 
 export default function OrganizationPage() {
   const router = useRouter();
-  const { state, updateOrganization, markStepComplete } = useWizardStore();
+  const { state, hydrated, updateOrganization, markStepComplete } = useWizardStore();
   const org = state.organization;
 
   const [aiLoading, setAiLoading] = useState(false);
   const [aiPreview, setAiPreview] = useState<string[] | null>(null);
+  const restoredRef = useRef(false);
+
+  // DB에서 기존 조직 정보 복원 (localStorage가 비어있을 때)
+  useEffect(() => {
+    if (!hydrated || restoredRef.current) return;
+    if (org.companyName) { restoredRef.current = true; return; }
+
+    restoredRef.current = true;
+    fetch("/api/organization")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.organizationName || data.organizationName === "조직") return;
+        updateOrganization({
+          companyName: data.organizationName,
+          industry: (data.industry as Industry) || "",
+          country: data.country || "대한민국",
+          employeeCount: data.employeeCount || "",
+          revenue: data.revenue || "",
+        });
+      })
+      .catch(() => {});
+  }, [hydrated, org.companyName, updateOrganization]);
 
   const handleIndustryChange = (industry: Industry) => {
     updateOrganization({ industry });

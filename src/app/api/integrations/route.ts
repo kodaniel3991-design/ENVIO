@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getConnector } from "@/lib/connectors";
+import { getAuthOrg, AuthError } from "@/lib/auth";
 
-/** GET /api/integrations — 전체 소스 목록 조회 */
+/** GET /api/integrations — 자기 조직 소스 목록 조회 */
 export async function GET(req: NextRequest) {
   try {
+    const { organizationId } = await getAuthOrg();
     const scope = req.nextUrl.searchParams.get("scope");
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { organizationId };
     if (scope) where.scope = parseInt(scope);
 
     const sources = await prisma.integrationSource.findMany({

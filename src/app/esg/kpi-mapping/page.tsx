@@ -668,7 +668,7 @@ export default function KpiMappingPage() {
               )}
             >
               <GitBranch className="h-3.5 w-3.5" />
-              마인드맵
+              흐름도
             </button>
             <button
               onClick={() => setViewMode("list")}
@@ -696,7 +696,7 @@ export default function KpiMappingPage() {
           )}
         </div>
 
-        {/* 마인드맵 뷰 */}
+        {/* 흐름도 뷰 */}
         {viewMode === "mindmap" && (
           <KpiMindMap
             dataSources={MOCK_DATA_SOURCES}

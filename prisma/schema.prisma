@@ -170,8 +170,25 @@ model Organization {
   memo                 String?    @db.Text
   createdAt            DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @default(now()) @updatedAt @map("updated_at")
-  worksites        Worksite[]
-  users            User[]
+  worksites            Worksite[]
+  users                User[]
+  kpiMasters           KpiMaster[]
+  kpiTargets           KpiTarget[]
+  kpiPerformance       KpiPerformance[]
+  kpiChangeLogs        KpiChangeLog[]
+  esgMetrics           EsgMetric[]
+  vendors              Vendor[]
+  esgReports           EsgReport[]
+  complianceItems      ComplianceItem[]
+  kpiDisclosureMappings KpiDisclosureMapping[]
+  materialityIssues    MaterialityIssue[]
+  reductionProjects    ReductionProject[]
+  dataValidations      DataValidation[]
+  orgDepartments       OrgDepartment[]
+  orgTeams             OrgTeam[]
+  orgPositions         OrgPosition[]
+  orgDuties            OrgDuty[]
+  integrationSources   IntegrationSource[]
 
   @@map("organizations")
 }
@@ -245,6 +262,7 @@ model Employee {
 
 model KpiMaster {
   id             String           @id @db.VarChar(36)
+  organizationId Int?             @map("organization_id")
   code           String           @unique @db.VarChar(50)
   name           String           @db.VarChar(255)
   category       String           @db.VarChar(50)
@@ -261,82 +279,93 @@ model KpiMaster {
   changeLogs     KpiChangeLog[]
   performance    KpiPerformance[]
   targets        KpiTarget[]
+  organization   Organization?    @relation(fields: [organizationId], references: [id])
 
   @@map("kpi_masters")
 }
 
 model KpiTarget {
-  id          String    @id @db.VarChar(36)
-  kpiId       String    @map("kpi_id") @db.VarChar(36)
-  period      String    @db.VarChar(50)
-  targetValue Decimal   @map("target_value") @db.Decimal(18, 6)
-  updatedBy   String?   @map("updated_by") @db.VarChar(255)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
-  kpi         KpiMaster @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  id             String        @id @db.VarChar(36)
+  organizationId Int?          @map("organization_id")
+  kpiId          String        @map("kpi_id") @db.VarChar(36)
+  period         String        @db.VarChar(50)
+  targetValue    Decimal       @map("target_value") @db.Decimal(18, 6)
+  updatedBy      String?       @map("updated_by") @db.VarChar(255)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at")
+  kpi            KpiMaster     @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@unique([kpiId, period], name: "uq_kpi_target")
   @@map("kpi_targets")
 }
 
 model KpiPerformance {
-  id          String    @id @db.VarChar(36)
-  kpiId       String    @map("kpi_id") @db.VarChar(36)
-  period      String    @db.VarChar(50)
-  actualValue Decimal   @map("actual_value") @db.Decimal(18, 6)
-  updatedBy   String?   @map("updated_by") @db.VarChar(255)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
-  kpi         KpiMaster @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  id             String        @id @db.VarChar(36)
+  organizationId Int?          @map("organization_id")
+  kpiId          String        @map("kpi_id") @db.VarChar(36)
+  period         String        @db.VarChar(50)
+  actualValue    Decimal       @map("actual_value") @db.Decimal(18, 6)
+  updatedBy      String?       @map("updated_by") @db.VarChar(255)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at")
+  kpi            KpiMaster     @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@unique([kpiId, period], name: "uq_kpi_perf")
   @@map("kpi_performance")
 }
 
 model KpiChangeLog {
-  id        String    @id @db.VarChar(36)
-  kpiId     String    @map("kpi_id") @db.VarChar(36)
-  field     String    @db.VarChar(100)
-  oldValue  String?   @map("old_value")
-  newValue  String?   @map("new_value")
-  changedBy String    @map("changed_by") @db.VarChar(255)
-  changedAt DateTime  @default(now()) @map("changed_at")
-  kpi       KpiMaster @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  id             String        @id @db.VarChar(36)
+  organizationId Int?          @map("organization_id")
+  kpiId          String        @map("kpi_id") @db.VarChar(36)
+  field          String        @db.VarChar(100)
+  oldValue       String?       @map("old_value")
+  newValue       String?       @map("new_value")
+  changedBy      String        @map("changed_by") @db.VarChar(255)
+  changedAt      DateTime      @default(now()) @map("changed_at")
+  kpi            KpiMaster     @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@map("kpi_change_log")
 }
 
 model EsgMetric {
-  id            String   @id @db.VarChar(36)
-  esgDomain     String   @map("esg_domain") @db.VarChar(50)
-  category      String   @db.VarChar(100)
-  indicatorName String   @map("indicator_name") @db.VarChar(255)
-  value         Decimal? @db.Decimal(18, 6)
-  unit          String   @db.VarChar(50)
-  period        String   @db.VarChar(50)
-  source        String?  @db.VarChar(255)
-  status        String   @default("pending") @db.VarChar(50)
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  id             String        @id @db.VarChar(36)
+  organizationId Int?          @map("organization_id")
+  esgDomain      String        @map("esg_domain") @db.VarChar(50)
+  category       String        @db.VarChar(100)
+  indicatorName  String        @map("indicator_name") @db.VarChar(255)
+  value          Decimal?      @db.Decimal(18, 6)
+  unit           String        @db.VarChar(50)
+  period         String        @db.VarChar(50)
+  source         String?       @db.VarChar(255)
+  status         String        @default("pending") @db.VarChar(50)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at")
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@map("esg_metrics")
 }
 
 model Vendor {
-  id          String             @id @db.VarChar(36)
-  name        String             @db.VarChar(255)
-  email       String?            @db.VarChar(255)
-  status      String             @default("invited") @db.VarChar(50)
-  tier        Int?
-  category    String?            @db.VarChar(255)
-  riskLevel   String?            @map("risk_level") @db.VarChar(50)
-  esgScore    Decimal?           @map("esg_score") @db.Decimal(5, 2)
-  invitedAt   DateTime?          @map("invited_at")
-  linkedAt    DateTime?          @map("linked_at")
-  createdAt   DateTime           @default(now()) @map("created_at")
-  updatedAt   DateTime           @default(now()) @updatedAt @map("updated_at")
-  esgScores   VendorEsgScore[]
-  submissions VendorSubmission[]
+  id             String             @id @db.VarChar(36)
+  organizationId Int?               @map("organization_id")
+  name           String             @db.VarChar(255)
+  email          String?            @db.VarChar(255)
+  status         String             @default("invited") @db.VarChar(50)
+  tier           Int?
+  category       String?            @db.VarChar(255)
+  riskLevel      String?            @map("risk_level") @db.VarChar(50)
+  esgScore       Decimal?           @map("esg_score") @db.Decimal(5, 2)
+  invitedAt      DateTime?          @map("invited_at")
+  linkedAt       DateTime?          @map("linked_at")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @default(now()) @updatedAt @map("updated_at")
+  esgScores      VendorEsgScore[]
+  submissions    VendorSubmission[]
+  organization   Organization?      @relation(fields: [organizationId], references: [id])
 
   @@map("vendors")
 }
@@ -375,79 +404,89 @@ model VendorEsgScore {
 }
 
 model EsgReport {
-  id          String    @id @db.VarChar(36)
-  title       String    @db.VarChar(255)
-  type        String    @db.VarChar(50)
-  period      String    @db.VarChar(50)
-  status      String    @default("draft") @db.VarChar(50)
-  framework   String?   @db.VarChar(50)
-  version     String?   @db.VarChar(50)
-  publishedAt DateTime? @map("published_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  id             String        @id @db.VarChar(36)
+  organizationId Int?          @map("organization_id")
+  title          String        @db.VarChar(255)
+  type           String        @db.VarChar(50)
+  period         String        @db.VarChar(50)
+  status         String        @default("draft") @db.VarChar(50)
+  framework      String?       @db.VarChar(50)
+  version        String?       @db.VarChar(50)
+  publishedAt    DateTime?     @map("published_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at")
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@map("esg_reports")
 }
 
 model ComplianceItem {
-  id          String    @id @db.VarChar(36)
-  framework   String    @db.VarChar(100)
-  requirement String    @db.VarChar(255)
-  status      String    @default("non_compliant") @db.VarChar(50)
-  dueDate     DateTime? @map("due_date") @db.Date
-  lastChecked DateTime? @map("last_checked")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  id             String        @id @db.VarChar(36)
+  organizationId Int?          @map("organization_id")
+  framework      String        @db.VarChar(100)
+  requirement    String        @db.VarChar(255)
+  status         String        @default("non_compliant") @db.VarChar(50)
+  dueDate        DateTime?     @map("due_date") @db.Date
+  lastChecked    DateTime?     @map("last_checked")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at")
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@map("compliance_items")
 }
 
 model KpiDisclosureMapping {
-  id             String   @id @db.VarChar(36)
-  kpiCode        String   @map("kpi_code") @db.VarChar(50)
-  kpiName        String   @map("kpi_name") @db.VarChar(255)
-  kpiCategory    String   @map("kpi_category") @db.VarChar(50)
-  framework      String   @db.VarChar(50)
-  disclosureCode String   @map("disclosure_code") @db.VarChar(100)
-  status         String   @default("unlinked") @db.VarChar(50)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+  id             String        @id @db.VarChar(36)
+  organizationId Int?          @map("organization_id")
+  kpiCode        String        @map("kpi_code") @db.VarChar(50)
+  kpiName        String        @map("kpi_name") @db.VarChar(255)
+  kpiCategory    String        @map("kpi_category") @db.VarChar(50)
+  framework      String        @db.VarChar(50)
+  disclosureCode String        @map("disclosure_code") @db.VarChar(100)
+  status         String        @default("unlinked") @db.VarChar(50)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at")
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@map("kpi_disclosure_mappings")
 }
 
 model MaterialityIssue {
-  id                  String   @id @db.VarChar(36)
-  code                String   @db.VarChar(50)
-  name                String   @db.VarChar(255)
-  dimension           String   @db.VarChar(50)
+  id                  String        @id @db.VarChar(36)
+  organizationId      Int?          @map("organization_id")
+  code                String        @db.VarChar(50)
+  name                String        @db.VarChar(255)
+  dimension           String        @db.VarChar(50)
   description         String?
-  expertScore         Decimal  @default(3.0) @map("expert_score") @db.Decimal(3, 2)
-  benchmarkScore      Decimal  @default(3.0) @map("benchmark_score") @db.Decimal(3, 2)
-  kpiLinkedCount      Int      @default(0) @map("kpi_linked_count")
-  kpiConnectionStatus String?  @map("kpi_connection_status") @db.VarChar(50)
-  impactScore         Decimal? @map("impact_score") @db.Decimal(4, 2)
-  stakeholderScore    Decimal? @map("stakeholder_score") @db.Decimal(4, 2)
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
+  expertScore         Decimal       @default(3.0) @map("expert_score") @db.Decimal(3, 2)
+  benchmarkScore      Decimal       @default(3.0) @map("benchmark_score") @db.Decimal(3, 2)
+  kpiLinkedCount      Int           @default(0) @map("kpi_linked_count")
+  kpiConnectionStatus String?       @map("kpi_connection_status") @db.VarChar(50)
+  impactScore         Decimal?      @map("impact_score") @db.Decimal(4, 2)
+  stakeholderScore    Decimal?      @map("stakeholder_score") @db.Decimal(4, 2)
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @default(now()) @updatedAt @map("updated_at")
+  organization        Organization? @relation(fields: [organizationId], references: [id])
 
   @@map("materiality_issues")
 }
 
 model ReductionProject {
-  id                  String    @id @db.VarChar(36)
-  name                String    @db.VarChar(255)
-  category            String    @db.VarChar(50)
-  scope               String    @db.VarChar(50)
-  owner               String?   @db.VarChar(255)
-  status              String    @default("planning") @db.VarChar(50)
-  expectedReductionMt Decimal?  @map("expected_reduction_mt") @db.Decimal(18, 6)
-  actualReductionMt   Decimal?  @map("actual_reduction_mt") @db.Decimal(18, 6)
-  estimatedCostM      Decimal?  @map("estimated_cost_m") @db.Decimal(18, 6)
-  startDate           DateTime? @map("start_date") @db.Date
-  endDate             DateTime? @map("end_date") @db.Date
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
+  id                  String        @id @db.VarChar(36)
+  organizationId      Int?          @map("organization_id")
+  name                String        @db.VarChar(255)
+  category            String        @db.VarChar(50)
+  scope               String        @db.VarChar(50)
+  owner               String?       @db.VarChar(255)
+  status              String        @default("planning") @db.VarChar(50)
+  expectedReductionMt Decimal?      @map("expected_reduction_mt") @db.Decimal(18, 6)
+  actualReductionMt   Decimal?      @map("actual_reduction_mt") @db.Decimal(18, 6)
+  estimatedCostM      Decimal?      @map("estimated_cost_m") @db.Decimal(18, 6)
+  startDate           DateTime?     @map("start_date") @db.Date
+  endDate             DateTime?     @map("end_date") @db.Date
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @default(now()) @updatedAt @map("updated_at")
+  organization        Organization? @relation(fields: [organizationId], references: [id])
 
   @@map("reduction_projects")
 }
@@ -493,6 +532,7 @@ model User {
 
 model DataValidation {
   id             String         @id @db.VarChar(36)
+  organizationId Int?           @map("organization_id")
   scope          String         @db.VarChar(50)
   category       String         @db.VarChar(255)
   emissionSource String         @map("emission_source") @db.VarChar(255)
@@ -509,6 +549,7 @@ model DataValidation {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at")
   approvals      DataApproval[]
+  organization   Organization?  @relation(fields: [organizationId], references: [id])
 
   @@map("data_validations")
 }
@@ -528,17 +569,20 @@ model DataApproval {
 }
 
 model OrgDepartment {
-  id        String    @id @db.VarChar(50)
-  name      String    @db.VarChar(100)
-  sortOrder Int       @default(0) @map("sort_order")
-  createdAt DateTime  @default(now()) @map("created_at")
-  teams     OrgTeam[]
+  id             String        @id @db.VarChar(50)
+  organizationId Int?          @map("organization_id")
+  name           String        @db.VarChar(100)
+  sortOrder      Int           @default(0) @map("sort_order")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  teams          OrgTeam[]
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@map("org_departments")
 }
 
 model OrgTeam {
   id              String         @id @db.VarChar(50)
+  organizationId  Int?           @map("organization_id")
   departmentId    String?        @map("department_id") @db.VarChar(50)
   name            String         @db.VarChar(100)
   leaderName      String?        @map("leader_name") @db.VarChar(100)
@@ -546,24 +590,29 @@ model OrgTeam {
   sortOrder       Int            @default(0) @map("sort_order")
   createdAt       DateTime       @default(now()) @map("created_at")
   department      OrgDepartment? @relation(fields: [departmentId], references: [id])
+  organization    Organization?  @relation(fields: [organizationId], references: [id])
 
   @@map("org_teams")
 }
 
 model OrgPosition {
-  id        String   @id @db.VarChar(50)
-  name      String   @db.VarChar(100)
-  sortOrder Int      @default(0) @map("sort_order")
-  createdAt DateTime @default(now()) @map("created_at")
+  id             String        @id @db.VarChar(50)
+  organizationId Int?          @map("organization_id")
+  name           String        @db.VarChar(100)
+  sortOrder      Int           @default(0) @map("sort_order")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@map("org_positions")
 }
 
 model OrgDuty {
-  id        String   @id @db.VarChar(50)
-  name      String   @db.VarChar(100)
-  sortOrder Int      @default(0) @map("sort_order")
-  createdAt DateTime @default(now()) @map("created_at")
+  id             String        @id @db.VarChar(50)
+  organizationId Int?          @map("organization_id")
+  name           String        @db.VarChar(100)
+  sortOrder      Int           @default(0) @map("sort_order")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   @@map("org_duties")
 }
@@ -703,9 +752,10 @@ model CommonCode {
 
 /// 외부 API 연동 소스 설정
 model IntegrationSource {
-  id           Int              @id @default(autoincrement())
-  name         String           @db.VarChar(100)
-  sourceType   String           @map("source_type") @db.VarChar(50) // kepco, district_heat, emission_engine, supplier_portal, custom
+  id             Int              @id @default(autoincrement())
+  organizationId Int?             @map("organization_id")
+  name           String           @db.VarChar(100)
+  sourceType     String           @map("source_type") @db.VarChar(50) // kepco, district_heat, emission_engine, supplier_portal, custom
   scope        Int?             // 1, 2, 3 or null (multi-scope)
   endpoint     String?          @db.VarChar(500)
   authType     String           @default("api_key") @map("auth_type") @db.VarChar(30) // api_key, oauth2, basic, none
@@ -718,6 +768,7 @@ model IntegrationSource {
   createdAt    DateTime         @default(now()) @map("created_at")
   updatedAt    DateTime         @default(now()) @updatedAt @map("updated_at")
   syncLogs     IntegrationSyncLog[]
+  organization Organization?       @relation(fields: [organizationId], references: [id])
 
   @@map("integration_sources")
 }
