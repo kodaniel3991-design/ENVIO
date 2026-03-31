@@ -20,11 +20,8 @@ const EnvironmentTrendCharts = dynamic(
   { ssr: false, loading: () => <Skeleton className="h-64 w-full rounded-lg" /> }
 );
 import { Scope3Breakdown } from "@/components/environment-data/scope3-breakdown";
-import {
-  MOCK_AI_INSIGHT,
-  MOCK_DATA_QUALITY,
-  getDetailById,
-} from "@/lib/mock/environment-data";
+import { EmissionReportModal } from "@/components/environment-data/emission-report-modal";
+import { getDetailById } from "@/lib/mock/environment-data";
 import type { EnvironmentDataRow, EnvironmentDataDetail } from "@/types/environment-data";
 
 /**
@@ -35,6 +32,7 @@ export default function EnvironmentPage() {
   const currentYear = new Date().getFullYear();
   const [selectedRow, setSelectedRow] = useState<EnvironmentDataRow | null>(null);
   const [entryModalOpen, setEntryModalOpen] = useState(false);
+  const [reportModal, setReportModal] = useState<{ open: boolean; scope: string; title: string }>({ open: false, scope: "all", title: "" });
   const detail: EnvironmentDataDetail | null = useMemo(
     () => (selectedRow ? getDetailById(selectedRow.id) : null),
     [selectedRow]
@@ -84,6 +82,28 @@ export default function EnvironmentPage() {
     staleTime: 1000 * 60 * 2,
   });
 
+  // 실제 DB 데이터: AI 인사이트
+  const { data: aiInsight } = useQuery({
+    queryKey: ["env-ai-insight", currentYear],
+    queryFn: async () => {
+      const res = await fetch(`/api/environment?type=ai-insight&year=${currentYear}`);
+      if (!res.ok) return { hasAnomaly: false, alerts: [], possibleCauses: [], recommendedActions: [] };
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+
+  // 실제 DB 데이터: 데이터 품질 점수
+  const { data: dataQuality = [] } = useQuery({
+    queryKey: ["env-data-quality", currentYear],
+    queryFn: async () => {
+      const res = await fetch(`/api/environment?type=data-quality&year=${currentYear}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+
   return (
     <>
       <PageHeader
@@ -101,7 +121,7 @@ export default function EnvironmentPage() {
 
         {/* 2. AI Insight Panel */}
         <CollapsibleSection title="AI 인사이트" defaultOpen>
-          <EnvironmentAiInsight data={MOCK_AI_INSIGHT} />
+          <EnvironmentAiInsight data={aiInsight ?? { hasAnomaly: false, alerts: [], possibleCauses: [], recommendedActions: [] }} />
         </CollapsibleSection>
 
         {/* 3. Filter Bar */}
@@ -117,6 +137,11 @@ export default function EnvironmentPage() {
           <EnvironmentDataTable
             rows={tableRows}
             onRowClick={setSelectedRow}
+            onSourceClick={(row) => {
+              const scopeMap: Record<string, string> = { "scope1": "1", "scope2": "2", "scope3": "3" };
+              const scope = scopeMap[row.id?.split("-")[0]] ?? "all";
+              setReportModal({ open: true, scope, title: row.indicatorName });
+            }}
           />
         </section>
 
@@ -130,7 +155,7 @@ export default function EnvironmentPage() {
 
         {/* 6. Data Quality */}
         <CollapsibleSection title="데이터 품질">
-          <DataQualityCards items={MOCK_DATA_QUALITY} />
+          <DataQualityCards items={dataQuality} />
         </CollapsibleSection>
 
         {/* 7. Trend Analytics — 실제 DB 데이터 */}
@@ -147,6 +172,14 @@ export default function EnvironmentPage() {
       <EnvironmentDataEntryModal
         open={entryModalOpen}
         onClose={() => setEntryModalOpen(false)}
+      />
+
+      <EmissionReportModal
+        open={reportModal.open}
+        onClose={() => setReportModal((p) => ({ ...p, open: false }))}
+        year={currentYear}
+        scope={reportModal.scope}
+        title={reportModal.title}
       />
     </>
   );

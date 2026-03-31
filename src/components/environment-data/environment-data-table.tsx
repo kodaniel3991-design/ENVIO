@@ -12,11 +12,11 @@ import { formatNumber } from "@/lib/format";
 import type { EnvironmentDataRow } from "@/types/environment-data";
 import { MoreHorizontal, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 
 interface EnvironmentDataTableProps {
   rows: EnvironmentDataRow[];
   onRowClick?: (row: EnvironmentDataRow) => void;
+  onSourceClick?: (row: EnvironmentDataRow) => void;
 }
 
 const COLUMNS = [
@@ -35,6 +35,7 @@ const COLUMNS = [
 export function EnvironmentDataTable({
   rows,
   onRowClick,
+  onSourceClick,
 }: EnvironmentDataTableProps) {
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
@@ -79,13 +80,14 @@ export function EnvironmentDataTable({
                 </td>
                 <td className="px-4 py-3 text-muted-foreground" onClick={(e) => e.stopPropagation()}>
                   {(row as any).sourceLink ? (
-                    <Link
-                      href={(row as any).sourceLink}
-                      className="inline-flex items-center gap-1 text-primary hover:underline"
+                    <button
+                      type="button"
+                      onClick={() => onSourceClick?.(row)}
+                      className="inline-flex items-center gap-1 text-primary hover:underline text-left"
                     >
                       {row.source}
                       <ExternalLink className="h-3 w-3" />
-                    </Link>
+                    </button>
                   ) : (
                     row.source
                   )}

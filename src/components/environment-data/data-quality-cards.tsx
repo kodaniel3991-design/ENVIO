@@ -15,6 +15,13 @@ function getScoreColor(value: number): string {
   return "text-carbon-danger";
 }
 
+const QUALITY_DETAIL: Record<string, string> = {
+  completeness: "등록된 배출시설의 12개월 활동량 입력 비율",
+  accuracy: "배출계수가 정상 매칭된 배출시설 비율",
+  consistency: "전월 대비 ±20% 이내로 안정적인 월 비율",
+  overall: "완전성 40% + 정확도 30% + 일관성 30% 가중 평균",
+};
+
 /** 데이터 품질 요약 카드: Completeness, Accuracy, Consistency, 전체 점수 */
 export function DataQualityCards({ items }: DataQualityCardsProps) {
   const overall = items.find((i) => i.id === "overall");
@@ -44,6 +51,11 @@ export function DataQualityCards({ items }: DataQualityCardsProps) {
                 {item.value}%
               </span>
             </div>
+            {QUALITY_DETAIL[item.id] && (
+              <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                {QUALITY_DETAIL[item.id]}
+              </p>
+            )}
           </CardContent>
         </Card>
       ))}
@@ -60,6 +72,9 @@ export function DataQualityCards({ items }: DataQualityCardsProps) {
               </span>
             </p>
             <Progress value={overall.value} className="mt-2 h-2" />
+            <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+              {QUALITY_DETAIL.overall}
+            </p>
           </CardContent>
         </Card>
       )}

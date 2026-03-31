@@ -280,6 +280,191 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(rows);
     }
 
+    if (type === "ai-insight") {
+      const facilities = await prisma.emissionFacility.findMany({
+        where: { status: "active", categoryId: { not: "u7" } },
+        select: { id: true, facilityName: true, scope: true, categoryId: true, fuelType: true, energyType: true },
+      });
+
+      const monthlyData = await prisma.$queryRaw<{ facility_id: string; month: number; val: number }[]>`
+        SELECT facility_id, month, activity_value AS val
+        FROM activity_data
+        WHERE year = ${year}
+          AND facility_id = ANY(${facilities.map((f) => f.id)}::text[])
+        ORDER BY facility_id, month
+      `;
+
+      // 시설별 그룹화
+      const byFac = new Map<string, { month: number; val: number }[]>();
+      for (const r of monthlyData) {
+        const arr = byFac.get(r.facility_id) ?? [];
+        arr.push({ month: r.month, val: parseFloat(String(r.val)) || 0 });
+        byFac.set(r.facility_id, arr);
+      }
+
+      const alerts: string[] = [];
+      const causes: string[] = [];
+      const actions: string[] = [];
+      const anomalyFacilities: string[] = [];
+
+      // 배출계수 매칭 확인
+      const allFactorCodes = await prisma.emissionFactorMaster.findMany({ select: { fuelCode: true } });
+      const factorSet = new Set(allFactorCodes.map((f) => f.fuelCode).filter(Boolean));
+      const unmatchedFacs = facilities.filter((f) => {
+        const code = f.fuelType ?? f.energyType;
+        return !code || !factorSet.has(code);
+      });
+      if (unmatchedFacs.length > 0) {
+        alerts.push(`배출계수 미매칭 시설 ${unmatchedFacs.length}개 감지`);
+        causes.push("배출계수 마스터에 해당 연료 코드 미등록");
+        actions.push("설정 > 배출계수 마스터에서 연료별 배출계수 등록");
+      }
+
+      // 전월 대비 ±20% 초과 변동 감지
+      for (const [facId, rows] of Array.from(byFac.entries())) {
+        const fac = facilities.find((f) => f.id === facId);
+        if (!fac) continue;
+        const sorted = [...rows].sort((a, b) => a.month - b.month);
+        for (let i = 1; i < sorted.length; i++) {
+          const prev = sorted[i - 1].val;
+          const curr = sorted[i].val;
+          if (prev === 0) continue;
+          const changeRate = (curr - prev) / prev;
+          if (Math.abs(changeRate) > 0.20 && curr > 0) {
+            const dir = changeRate > 0 ? "증가" : "감소";
+            const pct = Math.round(Math.abs(changeRate) * 100);
+            anomalyFacilities.push(`${fac.facilityName} (S${fac.scope}) ${sorted[i - 1].month}→${sorted[i].month}월 ${pct}% ${dir}`);
+          }
+        }
+      }
+
+      if (anomalyFacilities.length > 0) {
+        const top3 = anomalyFacilities.slice(0, 3);
+        for (const a of top3) alerts.push(a);
+        if (anomalyFacilities.length > 3) alerts.push(`외 ${anomalyFacilities.length - 3}건 이상 변동`);
+        causes.push("계절적 사용량 변동");
+        causes.push("신규 설비 가동 또는 가동 중단");
+        causes.push("데이터 입력 오류 가능성");
+        actions.push("해당 시설 활동량 데이터 재확인");
+        actions.push("전월 대비 변동 사유 기록");
+      }
+
+      // 미입력 월 감지
+      const currentMonth = new Date().getMonth() + 1;
+      const missingFacs: string[] = [];
+      for (const fac of facilities) {
+        const rows = byFac.get(fac.id) ?? [];
+        const enteredMonths = new Set(rows.filter((r) => r.val > 0).map((r) => r.month));
+        const missingMonths: number[] = [];
+        for (let m = 1; m < currentMonth; m++) {
+          if (!enteredMonths.has(m)) missingMonths.push(m);
+        }
+        if (missingMonths.length > 0) {
+          missingFacs.push(`${fac.facilityName} (${missingMonths.map((m) => m + "월").join(", ")} 미입력)`);
+        }
+      }
+      if (missingFacs.length > 0) {
+        alerts.push(`활동량 미입력 시설 ${missingFacs.length}개`);
+        causes.push("데이터 수집 지연 또는 누락");
+        actions.push("미입력 시설의 월별 활동량 데이터 입력");
+      }
+
+      const hasAnomaly = alerts.length > 0;
+      // 이상 없을 때 기본 메시지
+      if (!hasAnomaly) {
+        alerts.push("감지된 이상 항목이 없습니다");
+        causes.push("정상 범위 내 데이터");
+        actions.push("현재 데이터 품질 수준 유지");
+      }
+
+      return NextResponse.json({
+        hasAnomaly,
+        alerts: Array.from(new Set(alerts)),
+        possibleCauses: Array.from(new Set(causes)),
+        recommendedActions: Array.from(new Set(actions)),
+      });
+    }
+
+    if (type === "data-quality") {
+      // 모든 활성 시설 조회 (U7 제외)
+      const facilities = await prisma.emissionFacility.findMany({
+        where: { status: "active", categoryId: { not: "u7" } },
+        select: { id: true, fuelType: true, energyType: true },
+      });
+      const totalFacilities = facilities.length;
+      if (totalFacilities === 0) {
+        return NextResponse.json([
+          { id: "completeness", label: "Completeness", value: 0, description: "데이터 완전성" },
+          { id: "accuracy", label: "Accuracy", value: 0, description: "정확도" },
+          { id: "consistency", label: "Consistency", value: 0, description: "일관성" },
+          { id: "overall", label: "전체 Data Quality Score", value: 0, description: "" },
+        ]);
+      }
+
+      // 1) Completeness: 12개월 모두 입력된 시설 비율
+      const activityCounts = await prisma.$queryRaw<{ facility_id: string; months: number }[]>`
+        SELECT facility_id, COUNT(DISTINCT month) AS months
+        FROM activity_data
+        WHERE year = ${year}
+          AND facility_id = ANY(${facilities.map((f) => f.id)}::text[])
+        GROUP BY facility_id
+      `;
+      const countMap = new Map(activityCounts.map((r) => [r.facility_id, parseInt(String(r.months))]));
+      // 부분 입력도 반영 (월 수/12 평균)
+      const avgMonthRatio = facilities.reduce((sum, f) => sum + Math.min((countMap.get(f.id) ?? 0) / 12, 1), 0) / totalFacilities;
+      const completeness = Math.round(avgMonthRatio * 100);
+
+      // 2) Accuracy: 배출계수가 매칭된 시설 비율
+      const allFactorCodes = await prisma.emissionFactorMaster.findMany({ select: { fuelCode: true } });
+      const factorSet = new Set(allFactorCodes.map((f) => f.fuelCode).filter(Boolean));
+      const matchedFacilities = facilities.filter((f) => {
+        const code = f.fuelType ?? f.energyType;
+        return code && factorSet.has(code);
+      }).length;
+      const accuracy = totalFacilities > 0 ? Math.round((matchedFacilities / totalFacilities) * 100) : 0;
+
+      // 3) Consistency: 전월 대비 ±20% 이내인 월 비율
+      const monthlyData = await prisma.$queryRaw<{ facility_id: string; month: number; val: number }[]>`
+        SELECT facility_id, month, activity_value AS val
+        FROM activity_data
+        WHERE year = ${year}
+          AND facility_id = ANY(${facilities.map((f) => f.id)}::text[])
+        ORDER BY facility_id, month
+      `;
+      // 시설별 그룹화
+      const byFacility = new Map<string, { month: number; val: number }[]>();
+      for (const r of monthlyData) {
+        const arr = byFacility.get(r.facility_id) ?? [];
+        arr.push({ month: r.month, val: parseFloat(String(r.val)) || 0 });
+        byFacility.set(r.facility_id, arr);
+      }
+      let consistentPairs = 0;
+      let totalPairs = 0;
+      for (const rows of Array.from(byFacility.values())) {
+        rows.sort((a: { month: number; val: number }, b: { month: number; val: number }) => a.month - b.month);
+        for (let i = 1; i < rows.length; i++) {
+          const prev = rows[i - 1].val;
+          const curr = rows[i].val;
+          if (prev === 0 && curr === 0) { consistentPairs++; totalPairs++; continue; }
+          if (prev === 0) { totalPairs++; continue; } // 0→값은 불일치로 처리
+          const changeRate = Math.abs((curr - prev) / prev);
+          totalPairs++;
+          if (changeRate <= 0.20) consistentPairs++;
+        }
+      }
+      const consistency = totalPairs > 0 ? Math.round((consistentPairs / totalPairs) * 100) : 100;
+
+      // Overall: 가중 평균 (완전성 40%, 정확도 30%, 일관성 30%)
+      const overall = Math.round(completeness * 0.4 + accuracy * 0.3 + consistency * 0.3);
+
+      return NextResponse.json([
+        { id: "completeness", label: "Completeness", value: completeness, description: "데이터 완전성" },
+        { id: "accuracy", label: "Accuracy", value: accuracy, description: "정확도" },
+        { id: "consistency", label: "Consistency", value: consistency, description: "일관성" },
+        { id: "overall", label: "전체 Data Quality Score", value: overall, description: "" },
+      ]);
+    }
+
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   } catch (err: any) {
     console.error("[GET /api/environment]", err);

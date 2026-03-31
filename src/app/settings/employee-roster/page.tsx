@@ -342,24 +342,39 @@ export default function SettingsEmployeeRosterPage() {
   const handleTemplateDownload = () => {
     const headers = [
       "사업장명*", "부서", "소속팀", "사원번호", "이름*", "직급",
-      "재직상태", "고용형태", "입사일", "퇴사일",
-      "성별", "출생연도", "국적", "장애여부(Y/N)",
+      "관리자여부(Y/N)", "재직상태", "고용형태", "입사일", "퇴사일",
+      "휴직시작일", "휴직종료일",
+      "성별", "출생연도", "국적", "외국인여부(Y/N)",
+      "장애여부(Y/N)", "장애유형",
       "출퇴근교통수단", "연료", "주소",
       "비고",
     ];
     const note = [
       "※ 사업장명·이름 필수. " +
+      "관리자여부: Y/N (미입력 시 직급으로 자동 판단)  " +
       "재직상태: 재직/휴직/퇴사  " +
       "고용형태: 정규직/계약직/파견/인턴/기타  " +
       "성별: 남/여/기타/미응답  " +
+      "외국인여부: Y/N (미입력 시 국적으로 자동 판단)  " +
+      "장애유형: 중증/경증  " +
       "출퇴근교통수단: 대중교통/자가용/전기·수소/도보·자전거  " +
       "연료: 휘발유/경유/LPG/전기/수소  " +
-      "입사일·퇴사일: YYYY-MM-DD"
+      "입사일·퇴사일·휴직일: YYYY-MM-DD"
     ];
-    const ws1 = XLSXStyle.utils.aoa_to_sheet([note, headers]);
+    const exampleRow = [
+      "인천본사", "생산3본부", "생산1팀", "00030101", "홍길동", "과장",
+      "Y", "재직", "정규직", "2020-03-15", "",
+      "", "",
+      "남", "1985", "한국", "N",
+      "N", "",
+      "자가용", "휘발유", "인천광역시 남동구 은봉로 116 (논현동)",
+      "",
+    ];
+    const ws1 = XLSXStyle.utils.aoa_to_sheet([note, headers, exampleRow]);
     ws1["!cols"] = headers.map((h) =>
       ["사업장명*", "주소"].includes(h) ? { wch: 26 } :
-      ["부서", "소속팀", "이름*", "출퇴근교통수단"].includes(h) ? { wch: 16 } :
+      ["부서", "소속팀", "이름*", "출퇴근교통수단", "관리자여부(Y/N)", "외국인여부(Y/N)"].includes(h) ? { wch: 16 } :
+      ["휴직시작일", "휴직종료일"].includes(h) ? { wch: 14 } :
       { wch: 13 }
     );
 
@@ -373,6 +388,15 @@ export default function SettingsEmployeeRosterPage() {
       }
     };
     applyFont(ws1);
+    // 예시 행(3행) 회색 이탤릭 스타일 적용
+    for (let c = 0; c < headers.length; c++) {
+      const cellRef = XLSXStyle.utils.encode_cell({ r: 2, c });
+      if (ws1[cellRef]) {
+        ws1[cellRef].s = {
+          font: { sz: 10, name: "맑은 고딕", italic: true, color: { rgb: "999999" } },
+        };
+      }
+    }
 
     // 사업장 목록 시트
     const wsiteRows = [
@@ -452,22 +476,28 @@ export default function SettingsEmployeeRosterPage() {
             gender: byStr("성별"),
             birthYear: (() => { const v = parseInt(String(r[col("출생연도")] ?? "")); return isNaN(v) ? undefined : v; })(),
             nationality: byStr("국적"),
+            isDisabled: (() => { const v = String(r[col("장애여부(Y/N)")] ?? "").trim().toUpperCase(); return v === "Y" ? true : v === "N" ? false : undefined; })(),
+            disabilityType: byStr("장애유형"),
+            isManager: (() => {
+              const MANAGER_POSITIONS = ["과장", "차장", "부장", "이사", "상무", "전무", "부사장", "대표이사"];
+              const v = String(r[col("관리자여부(Y/N)")] ?? r[col("관리자(Y/N)")] ?? "").trim().toUpperCase();
+              if (v === "Y") return true;
+              if (v === "N") return false;
+              const pos = String(r[col("직급")] ?? "").trim();
+              return pos ? MANAGER_POSITIONS.includes(pos) : undefined;
+            })(),
             isForeigner: (() => {
+              const v = String(r[col("외국인여부(Y/N)")] ?? "").trim().toUpperCase();
+              if (v === "Y") return true;
+              if (v === "N") return false;
+              // 미입력 시 국적으로 자동 판단
               const KOREAN = ["한국", "대한민국", "korea", "korean", "kr", "south korea"];
               const nat = String(r[col("국적")] ?? "").trim();
               if (!nat) return undefined;
               return !KOREAN.includes(nat.toLowerCase());
             })(),
-            isDisabled: (() => { const v = String(r[col("장애여부(Y/N)")] ?? "").trim().toUpperCase(); return v === "Y" ? true : v === "N" ? false : undefined; })(),
-            isManager: (() => {
-              const MANAGER_POSITIONS = ["과장", "차장", "부장", "이사", "상무", "전무", "부사장", "대표이사"];
-              const v = String(r[col("관리자(Y/N)")] ?? r[col("관리자여부(Y/N)")] ?? "").trim().toUpperCase();
-              if (v === "Y") return true;
-              if (v === "N") return false;
-              // 비어 있으면 직급으로 자동 판단
-              const pos = String(r[col("직급")] ?? "").trim();
-              return pos ? MANAGER_POSITIONS.includes(pos) : undefined;
-            })(),
+            leaveStartDate: byStr("휴직시작일"),
+            leaveEndDate: byStr("휴직종료일"),
             commuteTransport: TRANSPORT_MAP[rawTransport] ?? undefined,
             fuel: byStr("연료"),
             address: byStr("주소"),
