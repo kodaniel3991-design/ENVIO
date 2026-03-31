@@ -16,3 +16,4 @@ export * from "./employee-roster";
 export * from "./commute-distance";
 export * from "./organization";
 export * from "./users";
+export * from "./admin";

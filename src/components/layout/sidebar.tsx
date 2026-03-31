@@ -12,6 +12,7 @@ import {
   type NavLinkItem,
   type NavGroupWithChildren,
 } from "@/lib/navigation";
+import { useAuth } from "@/hooks/use-auth";
 import { Logo } from "@/components/ui/logo";
 import { useSidebar } from "./sidebar-context";
 import {
@@ -27,6 +28,7 @@ import {
   ChevronRight,
   ChevronDown,
   Rocket,
+  Shield,
   ShieldCheck,
 } from "lucide-react";
 
@@ -41,6 +43,7 @@ const SECTION_ICONS: Record<string, React.ElementType> = {
   "감축 전략": TrendingDown,
   보고서: FileText,
   설정: Settings,
+  "플랫폼 관리": Shield,
 };
 
 /** 해당 섹션 하위에 활성 경로가 있는지 확인 */
@@ -192,6 +195,11 @@ function NavItem({
 
 export function Sidebar() {
   const { collapsed, toggle } = useSidebar();
+  const { isPlatformAdmin } = useAuth();
+
+  const visibleItems = isPlatformAdmin
+    ? NAV_ITEMS.filter((item) => item.label === "플랫폼 관리")
+    : NAV_ITEMS.filter((item) => item.label !== "플랫폼 관리");
 
   return (
     <aside
@@ -215,7 +223,7 @@ export function Sidebar() {
 
       {/* 네비게이션 */}
       <nav className="flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden p-2">
-        {NAV_ITEMS.map((item) => (
+        {visibleItems.map((item) => (
           <NavItem key={item.label} item={item} collapsed={collapsed} />
         ))}
       </nav>

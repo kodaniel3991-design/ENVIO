@@ -159,9 +159,19 @@ model Organization {
   scope3Categories     String?    @map("scope3_categories") @db.Text
   selectedFrameworks   String?    @map("selected_frameworks") @db.Text
   distanceApiSettings  String?    @map("distance_api_settings") @db.Text
+  /// 기업 상태: active, suspended, terminated
+  status               String     @default("active") @db.VarChar(30)
+  businessNumber       String?    @map("business_number") @db.VarChar(30)
+  contactName          String?    @map("contact_name") @db.VarChar(100)
+  contactEmail         String?    @map("contact_email") @db.VarChar(255)
+  contactPhone         String?    @map("contact_phone") @db.VarChar(30)
+  contractStartDate    DateTime?  @map("contract_start_date") @db.Date
+  contractEndDate      DateTime?  @map("contract_end_date") @db.Date
+  memo                 String?    @db.Text
   createdAt            DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @default(now()) @updatedAt @map("updated_at")
   worksites        Worksite[]
+  users            User[]
 
   @@map("organizations")
 }
@@ -455,18 +465,28 @@ model Role {
 }
 
 model User {
-  id          String    @id @db.VarChar(36)
-  name        String    @db.VarChar(255)
-  email       String    @unique @db.VarChar(255)
-  department  String?   @db.VarChar(255)
-  jobTitle    String?   @map("job_title") @db.VarChar(255)
-  roleId      String?   @map("role_id") @db.VarChar(36)
-  status      String    @default("active") @db.VarChar(50)
-  lastLoginAt DateTime? @map("last_login_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
-  password    String?   @db.VarChar(255)
-  role        Role?     @relation(fields: [roleId], references: [id])
+  id              String        @id @db.VarChar(36)
+  name            String        @db.VarChar(255)
+  email           String        @unique @db.VarChar(255)
+  department      String?       @db.VarChar(255)
+  jobTitle        String?       @map("job_title") @db.VarChar(255)
+  roleId          String?       @map("role_id") @db.VarChar(36)
+  status          String        @default("active") @db.VarChar(50)
+  lastLoginAt     DateTime?     @map("last_login_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @default(now()) @updatedAt @map("updated_at")
+  password        String?       @db.VarChar(255)
+  /// 소속 기업
+  organizationId  Int?          @map("organization_id")
+  /// 가입 승인 상태: pending, approved, rejected
+  approvalStatus  String        @default("approved") @map("approval_status") @db.VarChar(30)
+  approvedAt      DateTime?     @map("approved_at")
+  approvedBy      String?       @map("approved_by") @db.VarChar(36)
+  rejectionReason String?       @map("rejection_reason") @db.VarChar(500)
+  /// 플랫폼 슈퍼관리자 여부
+  isPlatformAdmin Boolean       @default(false) @map("is_platform_admin")
+  role            Role?         @relation(fields: [roleId], references: [id])
+  organization    Organization? @relation(fields: [organizationId], references: [id])
 
   @@map("users")
 }
@@ -546,6 +566,139 @@ model OrgDuty {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("org_duties")
+}
+
+/// 플랫폼 관리자 활동 감사 로그
+model PlatformAuditLog {
+  id         Int      @id @default(autoincrement())
+  actorId    String   @map("actor_id") @db.VarChar(36)
+  actorName  String   @map("actor_name") @db.VarChar(255)
+  action     String   @db.VarChar(100)
+  targetType String   @map("target_type") @db.VarChar(50)
+  targetId   String   @map("target_id") @db.VarChar(50)
+  targetName String?  @map("target_name") @db.VarChar(255)
+  detail     String?  @db.Text
+  ipAddress  String?  @map("ip_address") @db.VarChar(50)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([targetType, targetId])
+  @@index([createdAt(sort: Desc)])
+  @@map("platform_audit_logs")
+}
+
+/// 공지사항
+model Notice {
+  id          Int       @id @default(autoincrement())
+  title       String    @db.VarChar(300)
+  content     String    @db.Text
+  category    String    @default("general") @db.VarChar(50) // general, update, maintenance
+  isPinned    Boolean   @default(false) @map("is_pinned")
+  isPublished Boolean   @default(false) @map("is_published")
+  authorId    String    @map("author_id") @db.VarChar(36)
+  authorName  String    @map("author_name") @db.VarChar(255)
+  publishedAt DateTime? @map("published_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@index([isPublished, createdAt(sort: Desc)])
+  @@map("notices")
+}
+
+/// 고객 문의
+model SupportTicket {
+  id             Int      @id @default(autoincrement())
+  subject        String   @db.VarChar(300)
+  content        String   @db.Text
+  category       String   @default("general") @db.VarChar(50) // general, bug, feature, billing
+  status         String   @default("open") @db.VarChar(30) // open, in_progress, resolved, closed
+  priority       String   @default("normal") @db.VarChar(30) // low, normal, high, urgent
+  requesterId    String   @map("requester_id") @db.VarChar(36)
+  requesterName  String   @map("requester_name") @db.VarChar(255)
+  requesterEmail String?  @map("requester_email") @db.VarChar(255)
+  organizationId Int?     @map("organization_id")
+  assigneeId     String?  @map("assignee_id") @db.VarChar(36)
+  assigneeName   String?  @map("assignee_name") @db.VarChar(255)
+  reply          String?  @db.Text
+  repliedAt      DateTime? @map("replied_at")
+  resolvedAt     DateTime? @map("resolved_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([status, createdAt(sort: Desc)])
+  @@map("support_tickets")
+}
+
+/// 구독/요금제 플랜
+model SubscriptionPlan {
+  id            Int      @id @default(autoincrement())
+  code          String   @unique @db.VarChar(50) // free, starter, professional, enterprise
+  name          String   @db.VarChar(100)
+  description   String?  @db.VarChar(500)
+  monthlyPrice  Int      @default(0) @map("monthly_price")
+  maxUsers      Int      @default(5) @map("max_users")
+  maxWorksites  Int      @default(1) @map("max_worksites")
+  features      String?  @db.Text // JSON: ["scope1","scope2","scope3","report","ai"]
+  isActive      Boolean  @default(true) @map("is_active")
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  subscriptions OrgSubscription[]
+
+  @@map("subscription_plans")
+}
+
+/// 기업별 구독 상태
+model OrgSubscription {
+  id             Int       @id @default(autoincrement())
+  organizationId Int       @map("organization_id")
+  planId         Int       @map("plan_id")
+  status         String    @default("active") @db.VarChar(30) // active, expired, cancelled
+  startDate      DateTime  @map("start_date") @db.Date
+  endDate        DateTime? @map("end_date") @db.Date
+  memo           String?   @db.VarChar(500)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  plan           SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@index([organizationId])
+  @@map("org_subscriptions")
+}
+
+/// 챗봇 설정
+model ChatbotConfig {
+  id              Int      @id @default(autoincrement())
+  projectId       String   @unique @map("project_id") @db.VarChar(100)
+  botName         String   @default("ESG_On 어시스턴트") @map("bot_name") @db.VarChar(200)
+  theme           String   @default("light") @db.VarChar(20) // light, dark
+  placeholder     String?  @db.VarChar(500)
+  welcomeMessage  String?  @map("welcome_message") @db.Text
+  ragNamespace    String?  @map("rag_namespace") @db.VarChar(200)
+  chatApiUrl      String?  @map("chat_api_url") @db.VarChar(500)
+  confirmApiUrl   String?  @map("confirm_api_url") @db.VarChar(500)
+  isEnabled       Boolean  @default(false) @map("is_enabled")
+  position        String   @default("bottom-right") @db.VarChar(30) // bottom-right, bottom-left
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("chatbot_configs")
+}
+
+/// 공통 코드 마스터 (단위, 연료 종류, 에너지 유형 등)
+model CommonCode {
+  id          Int      @id @default(autoincrement())
+  codeGroup   String   @map("code_group") @db.VarChar(50)
+  code        String   @db.VarChar(100)
+  name        String   @db.VarChar(200)
+  description String?  @db.VarChar(500)
+  sortOrder   Int      @default(0) @map("sort_order")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([codeGroup, code], name: "uq_common_code")
+  @@map("common_codes")
 }
 
 /// 외부 API 연동 소스 설정

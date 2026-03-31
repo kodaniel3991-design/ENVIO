@@ -57,7 +57,10 @@ export default function LoginPage() {
         localStorage.removeItem(AUTO_LOGIN_KEY);
       }
 
-      router.push("/dashboard");
+      // 플랫폼 관리자는 /admin으로, 일반 사용자는 /dashboard로
+      const meRes = await fetch("/api/auth/me");
+      const me = await meRes.json();
+      router.push(me.isPlatformAdmin ? "/admin" : "/dashboard");
       router.refresh();
     } catch {
       setError("서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
@@ -82,16 +85,16 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <label htmlFor="email" className="text-sm font-medium text-foreground">
-                이메일
+                아이디
               </label>
               <input
                 id="email"
-                type="email"
-                autoComplete="email"
+                type="text"
+                autoComplete="username"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@esgon.com"
+                placeholder="admin"
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background transition-colors placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:ring-offset-2"
               />
             </div>

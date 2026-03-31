@@ -209,6 +209,28 @@ export const NAV_ITEMS: NavItem[] = [
       },
     ],
   },
+  {
+    type: "section",
+    label: "플랫폼 관리",
+    children: [
+      {
+        label: "",
+        children: [
+          link("/admin/organizations", "기업 관리"),
+          link("/admin/users", "사용자 승인 및 관리"),
+          link("/admin/emission-factors", "배출계수 마스터"),
+          link("/admin/common-codes", "공통 코드 관리"),
+          link("/admin/chatbot", "챗봇 관리"),
+          link("/admin/notices", "공지사항"),
+          link("/admin/support", "고객 문의"),
+          link("/admin/subscriptions", "요금제 / 구독"),
+          link("/admin/audit-logs", "감사 로그"),
+          link("/admin/monitoring", "시스템 모니터링"),
+          link("/admin/security", "접근 제어 / 보안"),
+        ],
+      },
+    ],
+  },
 ];
 
 /** pathname → breadcrumb labels (경로별 한글 메뉴명) */
@@ -277,6 +299,18 @@ export const ROUTE_LABELS: Record<string, string> = {
   "/reports/frameworks/issb": "ISSB",
   "/reports/frameworks/csrd": "CSRD",
   "/settings": "설정",
+  "/admin": "플랫폼 관리",
+  "/admin/organizations": "기업 관리",
+  "/admin/users": "사용자 승인 및 관리",
+  "/admin/emission-factors": "배출계수 마스터",
+  "/admin/common-codes": "공통 코드 관리",
+  "/admin/chatbot": "챗봇 관리",
+  "/admin/notices": "공지사항",
+  "/admin/support": "고객 문의",
+  "/admin/subscriptions": "요금제 / 구독",
+  "/admin/audit-logs": "감사 로그",
+  "/admin/monitoring": "시스템 모니터링",
+  "/admin/security": "접근 제어 / 보안",
   "/settings/users": "사용자 관리",
   "/settings/roles": "권한 관리",
   "/settings/integrations": "데이터 연동 설정",

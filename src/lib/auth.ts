@@ -5,14 +5,21 @@ const getSecret = () =>
     process.env.AUTH_SECRET ?? "dev-secret-please-change-in-production"
   );
 
-export async function signToken(payload: { userId: string; email: string; name: string }) {
-  return new SignJWT(payload)
+export interface TokenPayload {
+  userId: string;
+  email: string;
+  name: string;
+  isPlatformAdmin: boolean;
+}
+
+export async function signToken(payload: TokenPayload) {
+  return new SignJWT(payload as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("7d")
     .sign(getSecret());
 }
 
-export async function verifyToken(token: string) {
+export async function verifyToken(token: string): Promise<TokenPayload> {
   const { payload } = await jwtVerify(token, getSecret());
-  return payload as { userId: string; email: string; name: string };
+  return payload as unknown as TokenPayload;
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { signToken } from "@/lib/auth";
+import { writeAuditLog } from "@/lib/audit-log";
 
 export async function POST(request: Request) {
   try {
@@ -35,7 +36,26 @@ export async function POST(request: Request) {
       data: { lastLoginAt: new Date() },
     });
 
-    const token = await signToken({ userId: user.id, email: user.email, name: user.name });
+    // 로그인 감사 로그 (writeAuditLog는 쿠키에서 토큰을 읽으므로 직접 기록)
+    try {
+      await prisma.platformAuditLog.create({
+        data: {
+          actorId: user.id,
+          actorName: user.name,
+          action: "auth.login",
+          targetType: "user",
+          targetId: user.id,
+          targetName: user.name,
+        },
+      });
+    } catch { /* 로그 실패 시 로그인 차단하지 않음 */ }
+
+    const token = await signToken({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      isPlatformAdmin: user.isPlatformAdmin,
+    });
 
     const response = NextResponse.json({ ok: true, name: user.name });
     response.cookies.set("auth-token", token, {

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Providers } from "@/app/providers";
 import { AppLayout } from "./app-layout";
 import { SeedInitializer } from "./seed-initializer";
+import { ChatbotWidget } from "@/components/chatbot/chatbot-widget";
 
 function LayoutFallback() {
   return (
@@ -17,6 +18,7 @@ function LayoutFallback() {
 export function FullApp({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname === "/login";
+  const isAdminPage = pathname?.startsWith("/admin");
 
   if (isAuthPage) {
     return <Providers>{children}</Providers>;
@@ -30,6 +32,7 @@ export function FullApp({ children }: { children: React.ReactNode }) {
           <Suspense fallback={<LayoutFallback />}>{children}</Suspense>
         </AppLayout>
       </Suspense>
+      {!isAdminPage && <ChatbotWidget />}
     </Providers>
   );
 }
