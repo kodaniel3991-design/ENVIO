@@ -47,24 +47,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "workDays가 필요합니다." }, { status: 400 });
     }
 
-    const upserts = [];
     for (const [employeeId, months] of Object.entries(workDays)) {
       if (!Array.isArray(months)) continue;
       for (let m = 0; m < 12; m++) {
         const days = Math.max(0, Math.round(months[m] ?? 0));
-        upserts.push(
-          prisma.commutingWorkDay.upsert({
-            where: {
-              employeeId_year_month: { employeeId, year, month: m + 1 },
-            },
-            update: { days },
-            create: { employeeId, year, month: m + 1, days },
-          })
-        );
+        await prisma.commutingWorkDay.upsert({
+          where: {
+            employeeId_year_month: { employeeId, year, month: m + 1 },
+          },
+          update: { days },
+          create: { employeeId, year, month: m + 1, days },
+        });
       }
     }
-
-    await prisma.$transaction(upserts);
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {
