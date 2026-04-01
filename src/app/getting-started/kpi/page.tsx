@@ -127,8 +127,15 @@ export default function KpiPage() {
   const fwRec = getKpiRecommendationsByFrameworks(selectedFrameworks);
   const hasFwRec = fwRec.environmental.length > 0 || fwRec.social.length > 0 || fwRec.governance.length > 0;
 
-  // 산업 AI 추천은 프레임워크 추천이 없을 때 폴백으로 사용
-  const aiRec = !hasFwRec && organization.industry ? getAiRecommendation(organization.industry) : null;
+  // 산업 AI 추천 — 카테고리별 폴백으로 항상 계산
+  const aiRec = organization.industry ? getAiRecommendation(organization.industry) : null;
+
+  // 카테고리별 하이브리드 추천: 프레임워크 매칭이 있으면 사용, 없으면 산업 AI 폴백
+  const mergedRec = {
+    environmental: fwRec.environmental.length > 0 ? fwRec.environmental : (aiRec?.kpi.environmental ?? []),
+    social: fwRec.social.length > 0 ? fwRec.social : (aiRec?.kpi.social ?? []),
+    governance: fwRec.governance.length > 0 ? fwRec.governance : (aiRec?.kpi.governance ?? []),
+  };
 
   // hydrated 후 실행 — KPI가 비어있으면 추천 KPI를 기본 선택
   useEffect(() => {
@@ -136,14 +143,16 @@ export default function KpiPage() {
     if (kpi.environmental.length > 0 || kpi.social.length > 0 || kpi.governance.length > 0) return;
 
     const rec = getKpiRecommendationsByFrameworks(state.framework.selected);
-    const hasRec = rec.environmental.length > 0 || rec.social.length > 0 || rec.governance.length > 0;
-    if (hasRec) {
-      updateKpi({ environmental: rec.environmental, social: rec.social, governance: rec.governance });
-    } else if (state.organization.industry) {
-      const industryRec = getAiRecommendation(state.organization.industry);
-      if (industryRec) {
-        updateKpi({ environmental: industryRec.kpi.environmental, social: industryRec.kpi.social, governance: industryRec.kpi.governance });
-      }
+    const industryRec = state.organization.industry ? getAiRecommendation(state.organization.industry) : null;
+
+    const merged = {
+      environmental: rec.environmental.length > 0 ? rec.environmental : (industryRec?.kpi.environmental ?? []),
+      social: rec.social.length > 0 ? rec.social : (industryRec?.kpi.social ?? []),
+      governance: rec.governance.length > 0 ? rec.governance : (industryRec?.kpi.governance ?? []),
+    };
+
+    if (merged.environmental.length > 0 || merged.social.length > 0 || merged.governance.length > 0) {
+      updateKpi(merged);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
@@ -193,8 +202,8 @@ export default function KpiPage() {
   const totalSelected = kpi.environmental.length + kpi.social.length + kpi.governance.length;
   const activeCat = CATEGORIES.find((c) => c.key === activeTab)!;
 
-  // 현재 탭의 추천 목록: 프레임워크 기반 우선, 없으면 산업 AI 폴백
-  const recommended: string[] = hasFwRec ? fwRec[activeTab] : (aiRec?.kpi[activeTab] ?? []);
+  // 현재 탭의 추천 목록: 카테고리별 하이브리드 (프레임워크 우선, 없으면 산업 AI 폴백)
+  const recommended: string[] = mergedRec[activeTab];
 
   const items = ALL_KPI[activeTab];
   const groupSpans = calcGroupSpans(items);
@@ -205,42 +214,38 @@ export default function KpiPage() {
         <h2 className="text-base font-bold text-foreground">⑤ KPI 선택</h2>
         <p className="text-sm text-muted-foreground">
           관리할 ESG KPI를 선택해 주세요.
-          {hasFwRec && (
+          {(hasFwRec || aiRec) && (
             <span className="ml-2 inline-flex items-center gap-1 text-carbon-success">
               <Sparkles className="h-3 w-3" />
-              선택한 공시 기준({selectedFrameworks.join(", ")}) 기반으로 자동 추천됩니다.
-            </span>
-          )}
-          {!hasFwRec && aiRec && (
-            <span className="ml-2 inline-flex items-center gap-1 text-carbon-success">
-              <Sparkles className="h-3 w-3" />
-              {organization.industry} 산업 AI 추천이 적용됐습니다.
+              {hasFwRec
+                ? `선택한 공시 기준(${selectedFrameworks.join(", ")})${aiRec ? ` + ${organization.industry} 산업` : ""} 기반으로 자동 추천됩니다.`
+                : `${organization.industry} 산업 AI 추천이 적용됐습니다.`}
             </span>
           )}
         </p>
       </div>
 
       {/* 추천 기준 안내 배너 */}
-      {hasFwRec && (
+      {(hasFwRec || aiRec) && (
         <div className="mb-5 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3">
           <p className="mb-1.5 text-xs font-semibold text-carbon-success">
-            💡 선택한 공시 기준에서 요구하는 핵심 KPI가 자동으로 체크됩니다. 필요에 따라 추가/제거해 주세요.
+            💡 {hasFwRec
+              ? "선택한 공시 기준에서 요구하는 핵심 KPI가 자동으로 체크됩니다."
+              : `AI 추천 기준: ${organization.industry} 산업에서 주로 보고되는 핵심 KPI가 체크됩니다.`}
+            {" "}필요에 따라 추가/제거해 주세요.
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {selectedFrameworks.map((fw) => (
+            {hasFwRec && selectedFrameworks.map((fw) => (
               <span key={fw} className="rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold text-white">
                 {fw}
               </span>
             ))}
+            {aiRec && hasFwRec && (
+              <span className="rounded-full bg-carbon-success px-2.5 py-0.5 text-[10px] font-bold text-white">
+                + {organization.industry} 산업 AI
+              </span>
+            )}
           </div>
-        </div>
-      )}
-      {!hasFwRec && aiRec && (
-        <div className="mb-5 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3">
-          <p className="text-xs font-semibold text-carbon-success">
-            💡 AI 추천 기준: {organization.industry} 산업에서 주로 보고되는 핵심 KPI가 체크됩니다.
-            필요에 따라 추가/제거해 주세요.
-          </p>
         </div>
       )}
 
@@ -251,7 +256,7 @@ export default function KpiPage() {
           {CATEGORIES.map((cat) => {
             const Icon = cat.icon;
             const count = kpi[cat.key].length;
-            const recCount = hasFwRec ? fwRec[cat.key].length : (aiRec?.kpi[cat.key].length ?? 0);
+            const recCount = mergedRec[cat.key].length;
             const isActive = activeTab === cat.key;
             return (
               <button
