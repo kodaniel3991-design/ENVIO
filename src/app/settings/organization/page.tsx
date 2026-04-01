@@ -517,39 +517,54 @@ export default function SettingsOrganizationPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-xs font-medium text-muted-foreground">업종</label>
-                    <input
+                    <select
                       value={form.industry ?? ""}
                       onChange={(e) => setForm((p) => ({ ...p, industry: e.target.value }))}
-                      placeholder="제조업, IT 등"
                       className={inputClass}
-                    />
+                    >
+                      <option value="">선택해 주세요</option>
+                      {["자동차", "제조", "건설", "IT/소프트웨어", "금융", "유통", "에너지", "화학", "식품", "기타"].map((v) => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-muted-foreground">국가</label>
-                    <input
+                    <select
                       value={form.country ?? ""}
                       onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))}
-                      placeholder="대한민국"
                       className={inputClass}
-                    />
+                    >
+                      {["대한민국", "미국", "일본", "중국", "독일", "기타"].map((v) => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-muted-foreground">종업원 수</label>
-                    <input
+                    <select
                       value={form.employeeCount ?? ""}
                       onChange={(e) => setForm((p) => ({ ...p, employeeCount: e.target.value }))}
-                      placeholder="예: 100~300명"
                       className={inputClass}
-                    />
+                    >
+                      <option value="">선택해 주세요</option>
+                      {["50명 미만", "50~300명", "300~1,000명", "1,000~5,000명", "5,000명 이상"].map((v) => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-muted-foreground">매출 규모</label>
-                    <input
+                    <select
                       value={form.revenue ?? ""}
                       onChange={(e) => setForm((p) => ({ ...p, revenue: e.target.value }))}
-                      placeholder="예: 100억 이상"
                       className={inputClass}
-                    />
+                    >
+                      <option value="">선택 안 함</option>
+                      {["50억 미만", "50~300억", "300~1000억", "1000억~1조", "1조 이상", "비공개"].map((v) => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </>
