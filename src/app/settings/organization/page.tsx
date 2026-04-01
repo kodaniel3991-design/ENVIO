@@ -970,8 +970,8 @@ export default function SettingsOrganizationPage() {
                     <input
                       value={duty.name}
                       onChange={(e) => setDuties((p) => p.map((d) => d.id === duty.id ? { ...d, name: e.target.value } : d))}
-                      placeholder="직무명 입력"
-                      className={`${inputClass} w-1/3 shrink-0`}
+                      placeholder="직무명"
+                      className="h-9 w-[140px] shrink-0 rounded-md border border-input bg-transparent px-2 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
                       autoFocus
                       onClick={(e) => e.stopPropagation()}
                     />
@@ -979,14 +979,14 @@ export default function SettingsOrganizationPage() {
                       value={duty.description}
                       onChange={(e) => setDuties((p) => p.map((d) => d.id === duty.id ? { ...d, description: e.target.value } : d))}
                       placeholder="역할 설명 입력"
-                      className={`${inputClass} flex-1`}
+                      className="h-9 min-w-0 flex-1 rounded-md border border-input bg-transparent px-2 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
                       onClick={(e) => e.stopPropagation()}
                     />
                   </>
                 ) : (
                   <>
-                    <span className="w-1/3 shrink-0 text-sm">{duty.name}</span>
-                    <span className="flex-1 text-sm text-muted-foreground truncate">{duty.description}</span>
+                    <span className="w-[140px] shrink-0 text-sm">{duty.name}</span>
+                    <span className="min-w-0 flex-1 text-sm text-muted-foreground truncate">{duty.description}</span>
                   </>
                 )}
               </div>
