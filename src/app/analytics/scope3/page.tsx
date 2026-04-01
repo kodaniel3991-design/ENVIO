@@ -801,9 +801,11 @@ export default function Scope3Page() {
     "도보": "walk_bike", "자전거": "walk_bike", "도보·자전거": "walk_bike",
   };
   const VALID_TRANSPORTS = new Set(["car", "public", "ev", "walk_bike"]);
+  const EV_FUELS = new Set(["전기차", "전기", "전기·수소", "수소"]);
+
   const normalizeTransport = (t: string | undefined, fuel?: string | undefined) => {
-    // 연료가 "전기차"이면 교통수단을 ev로 분류
-    if (fuel === "전기차") return "ev";
+    // 연료가 전기/전기차/수소이면 교통수단을 ev로 분류
+    if (fuel && EV_FUELS.has(fuel)) return "ev";
     if (!t) return "car";
     if (VALID_TRANSPORTS.has(t)) return t;
     return TRANSPORT_KO_TO_CODE[t] ?? "car";
@@ -812,7 +814,7 @@ export default function Scope3Page() {
   // 연료 정규화 (ev/대중교통/도보는 연료 없음)
   const normalizeFuel = (fuel: string | undefined, transport: string) => {
     if (transport === "public" || transport === "ev" || transport === "walk_bike") return "";
-    if (!fuel || fuel === "전기차") return "";
+    if (!fuel || EV_FUELS.has(fuel)) return "";
     return fuel; // 휘발유, 경유, LPG 등 그대로 유지
   };
 
