@@ -571,7 +571,7 @@ export default function SettingsEmployeeRosterPage() {
             <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={worksites.length === 0}>
               <Upload className="mr-1 h-4 w-4" /> 업로드
             </Button>
-            <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleExcelUpload} />
+            <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleExcelUpload} />
             <Button variant="outline" size="sm" onClick={calcAllDistances} disabled={list.length === 0}>
               <Ruler className="mr-1 h-4 w-4" /> 거리 일괄 계산
             </Button>
