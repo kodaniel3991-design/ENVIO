@@ -511,8 +511,9 @@ export default function SettingsEmployeeRosterPage() {
         // 현재 탭 사업장 직원만 표시, 나머지는 저장 시 처리
         const currentItems = newItems.filter((e) => (e.worksiteId ?? null) === selectedWorksiteId);
         const otherItems = newItems.filter((e) => (e.worksiteId ?? null) !== selectedWorksiteId);
-        setList((prev) => [...prev, ...currentItems]);
-        setPendingOtherWs((prev) => [...prev, ...otherItems]);
+        // 기존 목록을 교체 (중복 방지)
+        setList(currentItems);
+        setPendingOtherWs(otherItems);
 
         const otherMsg = otherItems.length > 0 ? ` (다른 사업장 ${otherItems.length}명 포함)` : "";
         toast.info(`${newItems.length}명이 업로드되었습니다${otherMsg}. 저장 버튼을 눌러 반영하세요.`);
