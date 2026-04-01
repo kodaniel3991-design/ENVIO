@@ -88,9 +88,9 @@ export const DUMMY_STATE: WizardState = {
     scope3Categories: ["구매 제품 및 서비스", "상류 운송·물류", "출장", "통근", "사업장 폐기물"],
   },
   kpi: {
-    environmental: ["온실가스 배출량(Scope 1+2)", "에너지 효율", "용수 사용량", "폐기물 재활용률"],
-    social: ["산업재해율", "여성 관리자 비율", "교육훈련 시간", "이직률"],
-    governance: ["ESG 위원회 설치", "공급망 실사", "반부패 정책"],
+    environmental: ["온실가스 배출량(Scope 1+2)", "총 에너지 사용량", "공급망 탄소(Scope 3)", "용수 사용량", "폐기물 발생량", "재생에너지 비율"],
+    social: ["산업재해율", "여성 관리자 비율", "교육훈련 시간", "이직률", "공급망 인권 실사"],
+    governance: ["ESG 위원회 존재 여부", "공급망 리스크 평가율", "반부패 정책 존재 여부", "여성 이사 비율"],
   },
   framework: {
     selected: ["GRI", "K-ESG"],

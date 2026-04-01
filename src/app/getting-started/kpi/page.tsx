@@ -130,10 +130,9 @@ export default function KpiPage() {
   // 산업 AI 추천은 프레임워크 추천이 없을 때 폴백으로 사용
   const aiRec = !hasFwRec && organization.industry ? getAiRecommendation(organization.industry) : null;
 
-  // hydrated 후 실행 — localStorage 로드 전에는 framework.selected가 비어있어 추천이 계산되지 않음
+  // hydrated 후 실행 — KPI가 비어있으면 추천 KPI를 기본 선택
   useEffect(() => {
     if (!hydrated) return;
-    if (state.completedSteps.includes(5)) return;
     if (kpi.environmental.length > 0 || kpi.social.length > 0 || kpi.governance.length > 0) return;
 
     const rec = getKpiRecommendationsByFrameworks(state.framework.selected);
