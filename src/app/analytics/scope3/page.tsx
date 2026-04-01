@@ -1114,11 +1114,21 @@ export default function Scope3Page() {
   // 활동량 저장: u7 = 출근일 수, 일반 = 활동량 입력값
   const handleSaveActivity = () => {
     if (!selectedFacilityId) return;
-    if (isU7) {
-      saveActivityMutation.mutate({ facilityId: selectedFacilityId, year, values: u7Workdays });
-    } else {
-      saveActivityMutation.mutate({ facilityId: selectedFacilityId, year, values: activityValues });
-    }
+    const values = isU7 ? u7Workdays : activityValues;
+    const fid = selectedFacilityId;
+    saveActivityMutation.mutate(
+      { facilityId: fid, year, values },
+      {
+        onSuccess: () => {
+          // 로컬 상태를 삭제하여 DB에서 다시 로드되도록 함
+          if (isU7) {
+            setU7WorkdaysMap((prev) => { const next = { ...prev }; delete next[fid]; return next; });
+          } else {
+            setScope3LocalActivity((prev) => { const next = { ...prev }; delete next[fid]; return next; });
+          }
+        },
+      }
+    );
   };
 
   // 검증 요청
