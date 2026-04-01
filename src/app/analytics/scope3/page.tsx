@@ -31,6 +31,7 @@ import type {
 import { useFacilities, useSaveFacilities } from "@/hooks/use-facilities";
 import { useActivity, useSaveActivity } from "@/hooks/use-activity";
 import { useAuditLogs } from "@/hooks/use-audit-logs";
+import { saveCommutingWorkDays } from "@/services/api";
 import type { HistoricalMonthly } from "@/components/scope1/validation-insights-card";
 import { useEmployees } from "@/hooks/use-employees";
 import { useWorksites } from "@/hooks/use-worksites";
@@ -913,16 +914,17 @@ export default function Scope3Page() {
   const saveFacilitiesMutation = useSaveFacilities(3, selectedCategoryId, selectedWorksiteId || undefined);
   const saveActivityMutation = useSaveActivity();
 
-  // 선택된 배출원의 활동량 DB 로드 (시설 저장 후 재방문 시 복원)
-  const { data: dbActivityValues } = useActivity(selectedFacilityId, year);
-  const { data: auditLogs = [] } = useAuditLogs(selectedFacilityId, year);
+  // 선택된 배출원의 활동량 DB 로드 (u7은 별도 API 사용하므로 제외)
+  const activityFacilityId = isU7 ? "" : selectedFacilityId;
+  const { data: dbActivityValues } = useActivity(activityFacilityId, year);
+  const { data: auditLogs = [] } = useAuditLogs(activityFacilityId, year);
 
   // 시설 전환 시 활동량 쿼리 강제 갱신
   useEffect(() => {
-    if (selectedFacilityId) {
-      queryClient.invalidateQueries({ queryKey: ["activity", selectedFacilityId, year] });
+    if (activityFacilityId) {
+      queryClient.invalidateQueries({ queryKey: ["activity", activityFacilityId, year] });
     }
-  }, [selectedFacilityId, year, queryClient]);
+  }, [activityFacilityId, year, queryClient]);
 
   // 전년도 데이터 로드 (동월 비교용)
   const prevYear1 = String(parseInt(year) - 1);
@@ -1115,21 +1117,36 @@ export default function Scope3Page() {
   const currentInputValues = isU7 ? u7Workdays : activityValues;
   const hasErrors = currentInputValues.some((v) => v < 0);
 
-  // 활동량 저장: u7 = 출근일 수, 일반 = 활동량 입력값
-  const handleSaveActivity = () => {
+  // 활동량 저장: u7 = 출근일 수 (commuting-work-days API), 일반 = 활동량 입력값 (activity API)
+  const [u7Saving, setU7Saving] = useState(false);
+  const handleSaveActivity = async () => {
     if (!selectedFacilityId) return;
-    const values = isU7 ? u7Workdays : activityValues;
+
+    if (isU7) {
+      // 직원 출퇴근: 선택된 배출원에 매핑되는 직원별 출근일수를 DB 저장
+      setU7Saving(true);
+      try {
+        const workDays: Record<string, number[]> = {};
+        for (const emp of u7SelectedEmployees) {
+          workDays[emp.id] = u7Workdays;
+        }
+        await saveCommutingWorkDays({ year, workDays });
+        setU7WorkdaysMap((prev) => { const next = { ...prev }; delete next[selectedFacilityId]; return next; });
+        toast.success("저장되었습니다.");
+      } catch {
+        toast.error("저장에 실패했습니다.");
+      } finally {
+        setU7Saving(false);
+      }
+      return;
+    }
+
     const fid = selectedFacilityId;
     saveActivityMutation.mutate(
-      { facilityId: fid, year, values },
+      { facilityId: fid, year, values: activityValues },
       {
         onSuccess: () => {
-          // 로컬 상태를 삭제하여 DB에서 다시 로드되도록 함
-          if (isU7) {
-            setU7WorkdaysMap((prev) => { const next = { ...prev }; delete next[fid]; return next; });
-          } else {
-            setScope3LocalActivity((prev) => { const next = { ...prev }; delete next[fid]; return next; });
-          }
+          setScope3LocalActivity((prev) => { const next = { ...prev }; delete next[fid]; return next; });
           toast.success("저장되었습니다.");
         },
         onError: () => {
@@ -1372,9 +1389,9 @@ export default function Scope3Page() {
                 <Button
                   size="sm"
                   onClick={handleSaveActivity}
-                  disabled={!selectedFacilityId || saveActivityMutation.isPending}
+                  disabled={!selectedFacilityId || saveActivityMutation.isPending || u7Saving}
                 >
-                  {saveActivityMutation.isPending ? "저장 중..." : "활동량 저장"}
+                  {(saveActivityMutation.isPending || u7Saving) ? "저장 중..." : "활동량 저장"}
                 </Button>
               </div>
             </div>
