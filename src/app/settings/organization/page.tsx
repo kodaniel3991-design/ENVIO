@@ -402,6 +402,10 @@ export default function SettingsOrganizationPage() {
       organizationName: form.organizationName.trim() || "조직",
       organizationAddress: form.organizationAddress?.trim() ?? "",
       organizationAddressDetail: trimOptional(form.organizationAddressDetail),
+      industry: form.industry?.trim() ?? "",
+      country: form.country?.trim() ?? "",
+      employeeCount: form.employeeCount?.trim() ?? "",
+      revenue: form.revenue?.trim() ?? "",
       defaultWorksiteId: form.defaultWorksiteId,
       worksites: form.worksites
         .filter((w) => w.name.trim() !== "" || (w.address ?? "").trim() !== "")
