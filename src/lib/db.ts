@@ -5,9 +5,10 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 function createPrismaClient() {
   const { Pool } = require("pg");
+  const connStr = process.env.DATABASE_URL || "";
+  const sep = connStr.includes("?") ? "&" : "?";
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    client_encoding: "UTF8",
+    connectionString: `${connStr}${sep}client_encoding=UTF8`,
   });
   const adapter = new PrismaPg(pool as any);
   return new PrismaClient({
