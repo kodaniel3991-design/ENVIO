@@ -38,6 +38,7 @@ export async function GET() {
       duties: duties.map((d) => ({
         id: d.id,
         name: d.name,
+        description: d.description ?? "",
         sort_order: d.sortOrder,
       })),
     });
@@ -104,8 +105,8 @@ export async function POST(req: NextRequest) {
     } else if (type === "duty") {
       await prisma.orgDuty.upsert({
         where: { id: item.id },
-        update: { name: item.name, sortOrder: item.sort_order ?? 0 },
-        create: { id: item.id, organizationId, name: item.name, sortOrder: item.sort_order ?? 0 },
+        update: { name: item.name, description: item.description ?? null, sortOrder: item.sort_order ?? 0 },
+        create: { id: item.id, organizationId, name: item.name, description: item.description ?? null, sortOrder: item.sort_order ?? 0 },
       });
     }
 

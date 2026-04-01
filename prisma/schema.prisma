@@ -624,6 +624,7 @@ model OrgDuty {
   id             String        @id @db.VarChar(50)
   organizationId Int?          @map("organization_id")
   name           String        @db.VarChar(100)
+  description    String?       @db.VarChar(255)
   sortOrder      Int           @default(0) @map("sort_order")
   createdAt      DateTime      @default(now()) @map("created_at")
   organization   Organization? @relation(fields: [organizationId], references: [id])

@@ -28,7 +28,7 @@ function genId() {
 type OrgDept = { id: string; name: string; sort_order: number };
 type OrgTeam = { id: string; departmentId: string | null; name: string; leaderName: string | null; defaultDutyName: string | null; sort_order: number };
 type OrgPosition = { id: string; name: string; sort_order: number };
-type OrgDuty = { id: string; name: string; sort_order: number };
+type OrgDuty = { id: string; name: string; description: string; sort_order: number };
 
 function trimOptional(s: string | undefined): string | undefined {
   const t = s?.trim();
@@ -228,7 +228,7 @@ export default function SettingsOrganizationPage() {
   const [dutySnapshots, setDutySnapshots] = useState<Record<string, OrgDuty>>({});
 
   const addDuty = useCallback(() => {
-    const newItem: OrgDuty = { id: genId(), name: "", sort_order: duties.length };
+    const newItem: OrgDuty = { id: genId(), name: "", description: "", sort_order: duties.length };
     setDuties((p) => [...p, newItem]);
     setEditingDutyId(newItem.id);
   }, [duties.length]);
@@ -966,16 +966,28 @@ export default function SettingsOrganizationPage() {
                 onClick={() => editingDutyId !== duty.id && setSelectedDutyId(duty.id)}
               >
                 {editingDutyId === duty.id ? (
-                  <input
-                    value={duty.name}
-                    onChange={(e) => setDuties((p) => p.map((d) => d.id === duty.id ? { ...d, name: e.target.value } : d))}
-                    placeholder="직무명 입력"
-                    className={inputClass}
-                    autoFocus
-                    onClick={(e) => e.stopPropagation()}
-                  />
+                  <>
+                    <input
+                      value={duty.name}
+                      onChange={(e) => setDuties((p) => p.map((d) => d.id === duty.id ? { ...d, name: e.target.value } : d))}
+                      placeholder="직무명 입력"
+                      className={`${inputClass} w-1/3 shrink-0`}
+                      autoFocus
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <input
+                      value={duty.description}
+                      onChange={(e) => setDuties((p) => p.map((d) => d.id === duty.id ? { ...d, description: e.target.value } : d))}
+                      placeholder="역할 설명 입력"
+                      className={`${inputClass} flex-1`}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </>
                 ) : (
-                  <span className="flex-1 text-sm">{duty.name}</span>
+                  <>
+                    <span className="w-1/3 shrink-0 text-sm">{duty.name}</span>
+                    <span className="flex-1 text-sm text-muted-foreground truncate">{duty.description}</span>
+                  </>
                 )}
               </div>
             ))}

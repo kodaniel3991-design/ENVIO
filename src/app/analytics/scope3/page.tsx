@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PenLine, BarChart3, ShieldCheck, Plug } from "lucide-react";
+import { SavingProgressModal } from "@/components/ui/saving-progress-modal";
 import { ApiIntegrationPanel } from "@/components/integrations/api-integration-panel";
 import { cn, formatNumber } from "@/lib/utils";
 import { ValidationInsightsCard } from "@/components/scope1/validation-insights-card";
@@ -936,8 +937,8 @@ export default function Scope3Page() {
   // 전년도 데이터 로드 (동월 비교용)
   const prevYear1 = String(parseInt(year) - 1);
   const prevYear2 = String(parseInt(year) - 2);
-  const { data: prevYear1Activity } = useActivity(selectedFacilityId, prevYear1);
-  const { data: prevYear2Activity } = useActivity(selectedFacilityId, prevYear2);
+  const { data: prevYear1Activity } = useActivity(activityFacilityId, prevYear1);
+  const { data: prevYear2Activity } = useActivity(activityFacilityId, prevYear2);
 
   const historicalMonthly = useMemo<HistoricalMonthly[]>(() => {
     const entries: HistoricalMonthly[] = [
@@ -1132,22 +1133,42 @@ export default function Scope3Page() {
 
   // 활동량 저장: u7 = 출근일 수 (commuting-work-days API), 일반 = 활동량 입력값 (activity API)
   const [u7Saving, setU7Saving] = useState(false);
+  const [saveProgress, setSaveProgress] = useState(0);
+  const [saveModalStatus, setSaveModalStatus] = useState<"saving" | "success" | "error">("saving");
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+
   const handleSaveActivity = async () => {
     if (!selectedFacilityId) return;
 
     if (isU7) {
       // 직원 출퇴근: 선택된 배출원에 매핑되는 직원별 출근일수를 DB 저장
       setU7Saving(true);
+      setSaveProgress(0);
+      setSaveModalStatus("saving");
+      setSaveModalOpen(true);
+
       try {
-        const workDays: Record<string, number[]> = {};
-        for (const emp of u7SelectedEmployees) {
-          workDays[emp.id] = u7Workdays;
+        const empList = u7SelectedEmployees;
+        const total = empList.length;
+        const batchSize = 5;
+
+        for (let i = 0; i < total; i += batchSize) {
+          const batch = empList.slice(i, i + batchSize);
+          const workDays: Record<string, number[]> = {};
+          for (const emp of batch) {
+            workDays[emp.id] = u7Workdays;
+          }
+          await saveCommutingWorkDays({ year, workDays });
+          setSaveProgress(Math.min(100, Math.round(((i + batch.length) / total) * 100)));
         }
-        await saveCommutingWorkDays({ year, workDays });
+
         queryClient.invalidateQueries({ queryKey: ["commuting-work-days", year] });
-        toast.success("저장되었습니다.");
+        setSaveProgress(100);
+        setSaveModalStatus("success");
+        setTimeout(() => setSaveModalOpen(false), 1000);
       } catch {
-        toast.error("저장에 실패했습니다.");
+        setSaveModalStatus("error");
+        setTimeout(() => setSaveModalOpen(false), 2000);
       } finally {
         setU7Saving(false);
       }
@@ -1155,15 +1176,22 @@ export default function Scope3Page() {
     }
 
     const fid = selectedFacilityId;
+    setSaveProgress(30);
+    setSaveModalStatus("saving");
+    setSaveModalOpen(true);
+
     saveActivityMutation.mutate(
       { facilityId: fid, year, values: activityValues },
       {
         onSuccess: () => {
           setScope3LocalActivity((prev) => { const next = { ...prev }; delete next[fid]; return next; });
-          toast.success("저장되었습니다.");
+          setSaveProgress(100);
+          setSaveModalStatus("success");
+          setTimeout(() => setSaveModalOpen(false), 1000);
         },
         onError: () => {
-          toast.error("저장에 실패했습니다.");
+          setSaveModalStatus("error");
+          setTimeout(() => setSaveModalOpen(false), 2000);
         },
       }
     );
@@ -1771,6 +1799,13 @@ export default function Scope3Page() {
         open={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSave={handleAddActivity}
+      />
+
+      <SavingProgressModal
+        open={saveModalOpen}
+        progress={saveProgress}
+        status={saveModalStatus}
+        message={`직원 데이터 저장 중... (${u7SelectedEmployees.length}명)`}
       />
     </div>
   );
