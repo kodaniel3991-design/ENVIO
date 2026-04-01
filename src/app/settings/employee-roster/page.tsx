@@ -434,12 +434,11 @@ export default function SettingsEmployeeRosterPage() {
         const col = (name: string) => header.indexOf(name);
 
         const TRANSPORT_MAP: Record<string, CommuteTransportType> = {
-          "대중교통": "public",   "public": "public",
-          "자가용": "car",        "car": "car",
-          // 구버전 호환
+          "대중교통": "public",   "public": "public",   "버스": "public",   "지하철": "public",
+          "자가용": "car",        "car": "car",          "승용차": "car",    "자동차": "car",
           "자가용(휘발유)": "car", "자가용(경유)": "car", "자가용(lpg)": "car",
-          "전기·수소": "ev",      "ev": "ev",
-          "도보·자전거": "walk_bike", "walk_bike": "walk_bike",
+          "전기차": "ev",         "전기·수소": "ev",     "ev": "ev",         "수소차": "ev",
+          "도보": "walk_bike",    "자전거": "walk_bike", "도보·자전거": "walk_bike", "walk_bike": "walk_bike",
         };
 
         // 사업장명 → ID 매핑 (대소문자·공백 무시)
