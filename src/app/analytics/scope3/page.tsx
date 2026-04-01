@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/page-header";
 import { ScopeTabs } from "@/components/scope1/scope-tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1126,6 +1127,10 @@ export default function Scope3Page() {
           } else {
             setScope3LocalActivity((prev) => { const next = { ...prev }; delete next[fid]; return next; });
           }
+          toast.success("저장되었습니다.");
+        },
+        onError: () => {
+          toast.error("저장에 실패했습니다.");
         },
       }
     );
