@@ -1,29 +1,127 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getMaterialityIssues } from "@/services/api";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { getMaterialityIssues, saveMaterialityIssues } from "@/services/api";
+import { getMaterialityScoreRecommendation } from "@/lib/ai-recommendations";
 import { PageHeader } from "@/components/layout/page-header";
 import { MaterialitySubNav } from "@/components/materiality/materiality-sub-nav";
-import { MaterialityIssueTable } from "@/components/materiality/materiality-issue-table";
-import { MaterialityIssueDrawer } from "@/components/materiality/materiality-issue-drawer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Leaf, Users, Scale, RefreshCw, AlertTriangle, Sparkles, ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { MaterialityIssue, MaterialityEsgDimension } from "@/types";
 
+const DIM_LABEL: Record<MaterialityEsgDimension, string> = { environment: "환경", social: "사회", governance: "거버넌스" };
+const DIM_ICON: Record<MaterialityEsgDimension, typeof Leaf> = { environment: Leaf, social: Users, governance: Scale };
+const DIM_COLOR: Record<MaterialityEsgDimension, string> = { environment: "text-green-600 bg-green-100", social: "text-blue-600 bg-blue-100", governance: "text-amber-700 bg-amber-100" };
+
 export default function MaterialityIssuesPage() {
-  const [dimFilter, setDimFilter] = useState<MaterialityEsgDimension | "all">("all");
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selected, setSelected] = useState<MaterialityIssue | null>(null);
-  const { data: issues, isLoading } = useQuery({ queryKey: ["materiality-issues"], queryFn: getMaterialityIssues });
-  const openDrawer = (r: MaterialityIssue) => { setSelected(r); setDrawerOpen(true); };
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [industry, setIndustry] = useState("");
+
+  useEffect(() => {
+    try { const s = localStorage.getItem("esg_setup_wizard"); if (s) setIndustry(JSON.parse(s).organization?.industry ?? ""); } catch {}
+  }, []);
+
+  const { data: issues = [], isLoading } = useQuery<MaterialityIssue[]>({ queryKey: ["materiality-issues"], queryFn: getMaterialityIssues });
+
+  const generateMutation = useMutation({
+    mutationFn: async () => { const r = await fetch("/api/materiality?type=generate"); if (!r.ok) throw new Error(""); return r.json(); },
+    onSuccess: (d) => { queryClient.invalidateQueries({ queryKey: ["materiality-issues"] }); toast.success(`${d.count}개 이슈 생성`); },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: saveMaterialityIssues,
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["materiality-issues"] }); toast.success("AI 추천 점수가 적용되었습니다."); },
+  });
+
+  const applyAiScores = () => {
+    const updated = issues.map((issue) => {
+      const rec = getMaterialityScoreRecommendation(industry, issue.kpiGroup ?? issue.name);
+      const impact = Math.round(((rec.scale + rec.scope + rec.irremediability) / 3) * 100) / 100;
+      return { ...issue, impactScale: rec.scale, impactScope: rec.scope, impactIrremediability: rec.irremediability, impactScore: impact, financialScore: rec.financial };
+    });
+    saveMutation.mutate(updated);
+  };
+
   return (
-    <>
-      <PageHeader title="이슈 평가" description="ESG 이슈별 내부 전문가·벤치마크·KPI 연결 평가">
+    <div>
+      <PageHeader title="이중 중대성 평가" description="ESG 이슈의 영향 중대성과 재무 중대성을 단계별로 평가합니다 — CSRD/GRI 기준">
         <MaterialitySubNav />
       </PageHeader>
-      <div className="mt-8">
-        <MaterialityIssueTable data={issues ?? []} isLoading={isLoading} onRowClick={openDrawer} dimensionFilter={dimFilter} onDimensionFilterChange={setDimFilter} />
+      <div className="mt-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="text-base">① 평가 대상 ESG 이슈 확인</CardTitle>
+              <p className="text-sm text-muted-foreground">KPI 카탈로그 그룹 기반 {issues.length}개 이슈. AI 추천 점수를 적용한 후 다음 단계로 진행하세요.</p>
+            </div>
+            <div className="flex gap-2">
+              {issues.length === 0 && (
+                <Button size="sm" variant="outline" onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending}>
+                  <RefreshCw className="mr-1 h-3.5 w-3.5" /> 이슈 자동 생성
+                </Button>
+              )}
+              {issues.length > 0 && (
+                <Button size="sm" onClick={applyAiScores} disabled={saveMutation.isPending}>
+                  <Sparkles className="mr-1.5 h-3.5 w-3.5" /> AI 추천 점수 적용{industry && ` (${industry})`}
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? <p className="text-sm text-muted-foreground">불러오는 중...</p> : issues.length === 0 ? (
+              <div className="py-8 text-center"><AlertTriangle className="mx-auto h-8 w-8 text-muted-foreground" /><p className="mt-2 text-sm text-muted-foreground">이슈가 없습니다. "이슈 자동 생성"을 클릭하세요.</p></div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                {(["environment", "social", "governance"] as const).map((dim) => {
+                  const dimIssues = issues.filter((i) => i.dimension === dim);
+                  const Icon = DIM_ICON[dim];
+                  const color = DIM_COLOR[dim];
+                  return (
+                    <div key={dim} className="rounded-lg border border-border p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className={cn("rounded px-2 py-1 text-xs font-bold", color)}><Icon className="mr-1 inline h-3.5 w-3.5" />{DIM_LABEL[dim]}</span>
+                        <span className="text-sm text-muted-foreground">{dimIssues.length}개</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {dimIssues.map((issue) => {
+                          const hasScore = issue.impactScore != null;
+                          return (
+                            <div key={issue.id} className="flex items-center justify-between rounded border border-border/50 px-3 py-2 text-xs">
+                              <span className="font-medium">{issue.name}</span>
+                              <div className="flex items-center gap-2">
+                                {hasScore ? (
+                                  <>
+                                    <span className="text-muted-foreground">영향 <strong className="text-foreground">{(issue.impactScore ?? 0).toFixed(1)}</strong></span>
+                                    <span className="text-muted-foreground">재무 <strong className="text-foreground">{(issue.financialScore ?? 0).toFixed(1)}</strong></span>
+                                  </>
+                                ) : (
+                                  <span className="text-amber-500">미평가</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
-      <MaterialityIssueDrawer open={drawerOpen} onOpenChange={setDrawerOpen} item={selected} />
-    </>
+      <div className="mt-6 flex justify-end">
+        <button onClick={() => router.push("/materiality/impact")}
+          className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90">
+          다음: 영향 중대성 <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
   );
 }
