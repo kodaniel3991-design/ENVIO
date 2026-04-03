@@ -44,13 +44,11 @@ export default function OrganizationPage() {
         if (!data.organizationName || data.organizationName === "조직") return;
         setDbOrg(data);
 
-        // localStorage가 비어있으면 DB에서 복원
-        if (!org.companyName) {
-          // 산업군을 위자드 목록에 매칭 (부분 매칭)
+        // DB를 항상 source of truth로 사용하여 복원
+        {
           const matchedIndustry = INDUSTRIES.find((ind) =>
             data.industry?.includes(ind) || ind.includes(data.industry ?? "")
           ) ?? "";
-          // 직원수를 위자드 범위에 매칭
           const matchedEmployeeCount = EMPLOYEE_RANGES.find((r) =>
             data.employeeCount?.includes(r) || r.includes(data.employeeCount ?? "")
           ) ?? "";
