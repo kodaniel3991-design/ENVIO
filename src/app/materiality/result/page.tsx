@@ -328,31 +328,51 @@ function PrintableMatrix({ issues, getImpact, getFinancial, threshold }: {
           </g>
         ))}
 
-        {/* 데이터 포인트 */}
-        {assessed.map((issue) => {
+        {/* 데이터 포인트 (번호만 표시) */}
+        {assessed.map((issue, idx) => {
           const x = toX(getImpact(issue));
           const y = toY(getFinancial(issue));
           const color = DIM_DOT_COLOR[issue.dimension] ?? "#6b7280";
           return (
             <g key={issue.id}>
-              <circle cx={x} cy={y} r={6} fill={color} stroke="white" strokeWidth={2} opacity={0.9} />
-              <text x={x + 9} y={y + 3} fontSize={8} fill="#374151">{issue.name.length > 6 ? issue.name.slice(0, 6) + "…" : issue.name}</text>
+              <circle cx={x} cy={y} r={10} fill={color} stroke="white" strokeWidth={2} opacity={0.9} />
+              <text x={x} y={y + 3.5} textAnchor="middle" fontSize={8} fill="white" fontWeight={700}>{idx + 1}</text>
             </g>
           );
         })}
       </svg>
 
-      {/* 범례 */}
-      <div className="text-xs space-y-2 pt-2">
-        <p className="font-semibold text-sm">범례</p>
-        <div className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full" style={{ background: "#22c55e" }} /> 환경 (E)</div>
-        <div className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full" style={{ background: "#3b82f6" }} /> 사회 (S)</div>
-        <div className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full" style={{ background: "#d97706" }} /> 거버넌스 (G)</div>
-        <div className="mt-3 pt-2 border-t border-border space-y-1 text-muted-foreground">
-          <p>점선: 기준선 ({threshold})</p>
-          <p>우상단: 이중 중대 (핵심)</p>
-          <p>우하단: 영향 중대</p>
-          <p>좌상단: 재무 중대</p>
+      {/* 번호 범례 테이블 (3열) */}
+      <div className="mt-3">
+        <p className="text-xs font-semibold mb-2">이슈 번호</p>
+        <table className="w-full text-[10px] border-collapse">
+          <tbody>
+            {Array.from({ length: Math.ceil(assessed.length / 3) }).map((_, rowIdx) => (
+              <tr key={rowIdx}>
+                {[0, 1, 2].map((colIdx) => {
+                  const i = rowIdx * 3 + colIdx;
+                  const issue = assessed[i];
+                  if (!issue) return <td key={colIdx} className="py-0.5 px-2" />;
+                  return (
+                    <td key={colIdx} className="py-0.5 px-2 border-b border-border/30 leading-tight">
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-white mr-1" style={{ background: DIM_DOT_COLOR[issue.dimension] ?? "#6b7280" }}>{i + 1}</span>
+                      <span className="font-medium">{issue.name}</span>
+                      <span className="text-muted-foreground ml-1">({getImpact(issue).toFixed(1)}, {getFinancial(issue).toFixed(1)})</span>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="mt-2 flex gap-4 text-[10px] text-muted-foreground">
+          <span>점선: 기준선 ({threshold})</span>
+          <span className="text-destructive font-medium">우상단: 이중 중대</span>
+          <span className="text-green-600">우하단: 영향 중대</span>
+          <span className="text-blue-600">좌상단: 재무 중대</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full" style={{ background: "#22c55e" }} />환경</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full" style={{ background: "#3b82f6" }} />사회</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full" style={{ background: "#d97706" }} />거버넌스</span>
         </div>
       </div>
     </div>

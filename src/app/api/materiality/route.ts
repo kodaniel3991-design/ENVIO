@@ -156,6 +156,46 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // 중대성 평가 결과 → KPI managementLevel 자동 반영
+    const THRESHOLD = 3.5;
+    const allIssues = await prisma.materialityIssue.findMany({
+      where: { organizationId },
+      select: { kpiGroup: true, dimension: true, impactScore: true, financialScore: true },
+    });
+
+    // 중대 이슈의 kpiGroup 목록
+    const materialGroups = new Set<string>();
+    for (const issue of allIssues) {
+      if (!issue.kpiGroup) continue;
+      const impact = issue.impactScore ? parseFloat(String(issue.impactScore)) : 0;
+      const financial = issue.financialScore ? parseFloat(String(issue.financialScore)) : 0;
+      if (impact >= THRESHOLD || financial >= THRESHOLD) {
+        materialGroups.add(issue.kpiGroup);
+      }
+    }
+
+    // 조직의 KPI 중 해당 그룹에 속하는 KPI → material, 나머지 → critical 유지 또는 general
+    // 카탈로그에서 KPI → group 매핑 조회
+    const catalogItems = await prisma.kpiCatalog.findMany({
+      where: { active: true },
+      select: { name: true, grp: true },
+    });
+    const kpiGroupMap = new Map(catalogItems.map((c) => [c.name, c.grp]));
+
+    const kpiMasters = await prisma.kpiMaster.findMany({
+      where: { organizationId },
+      select: { id: true, name: true, managementLevel: true },
+    });
+
+    for (const kpi of kpiMasters) {
+      if (kpi.managementLevel === "critical") continue; // 의무는 변경하지 않음
+      const group = kpiGroupMap.get(kpi.name);
+      const newLevel = group && materialGroups.has(group) ? "material" : "general";
+      if (kpi.managementLevel !== newLevel) {
+        await prisma.kpiMaster.update({ where: { id: kpi.id }, data: { managementLevel: newLevel } });
+      }
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
