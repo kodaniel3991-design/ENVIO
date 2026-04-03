@@ -6,12 +6,12 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CardActionBar } from "@/components/ui/card-action-bar";
-import type { UserItem, UserStatus, RoleItem } from "@/types";
+import type { UserItem, UserStatus } from "@/types";
 import {
   deleteUser,
-  getRoles,
   getUsers,
   inviteUser,
+  resetPassword,
   upsertUser,
 } from "@/services/api";
 import { USER_STATUS_LABEL } from "@/lib/constants/status-badges";
@@ -21,14 +21,21 @@ import { PaginationBar } from "@/components/common/pagination-bar";
 const inputClass =
   "h-8 w-full min-w-0 rounded-md border border-input bg-transparent px-2 py-1 text-xs ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring";
 
-const emptyForm = { name: "", email: "", department: "", jobTitle: "", roleId: "" };
+const emptyForm = { name: "", email: "", department: "", jobTitle: "", duty: "" };
 
 function trimOptional(s: string | undefined): string | undefined {
   const t = s?.trim();
   return t === "" ? undefined : t;
 }
 
-type EditForm = { name: string; department: string; jobTitle: string; roleId: string; status: UserStatus };
+type OrgStructure = {
+  departments: { id: string; name: string }[];
+  teams: { id: string; departmentId: string | null; name: string }[];
+  positions: { id: string; name: string }[];
+  duties: { id: string; name: string; description: string }[];
+};
+
+type EditForm = { name: string; department: string; jobTitle: string; duty: string; status: UserStatus };
 
 export default function SettingsUsersPage() {
   const queryClient = useQueryClient();
@@ -36,10 +43,19 @@ export default function SettingsUsersPage() {
     queryKey: ["settings-users"],
     queryFn: getUsers,
   });
-  const { data: roles = [], isLoading: rolesLoading } = useQuery<RoleItem[]>({
-    queryKey: ["settings-roles"],
-    queryFn: getRoles,
+
+  const { data: orgStructure } = useQuery<OrgStructure>({
+    queryKey: ["org-structure"],
+    queryFn: async () => {
+      const res = await fetch("/api/org-structure");
+      if (!res.ok) throw new Error("org-structure fetch failed");
+      return res.json();
+    },
   });
+  const orgDepts = orgStructure?.departments ?? [];
+  const orgTeams = orgStructure?.teams ?? [];
+  const orgPositions = orgStructure?.positions ?? [];
+  const orgDuties = orgStructure?.duties ?? [];
 
   const inviteMutation = useMutation({
     mutationFn: inviteUser,
@@ -69,6 +85,19 @@ export default function SettingsUsersPage() {
     },
     onError: () => {
       toast.error("처리에 실패했습니다.");
+    },
+  });
+
+  const [tempPwResult, setTempPwResult] = useState<{ userName: string; pw: string } | null>(null);
+  const resetPwMutation = useMutation({
+    mutationFn: resetPassword,
+    onSuccess: (data, userId) => {
+      const u = users.find((x) => x.id === userId);
+      setTempPwResult({ userName: u?.name ?? "", pw: data.tempPassword });
+      toast.success("비밀번호가 초기화되었습니다.");
+    },
+    onError: () => {
+      toast.error("비밀번호 초기화에 실패했습니다.");
     },
   });
 
@@ -106,7 +135,7 @@ export default function SettingsUsersPage() {
       email: addForm.email.trim(),
       department: trimOptional(addForm.department),
       jobTitle: trimOptional(addForm.jobTitle),
-      roleId: trimOptional(addForm.roleId),
+      duty: trimOptional(addForm.duty),
     };
     if (!payload.name || !payload.email) return;
     await inviteMutation.mutateAsync(payload);
@@ -121,7 +150,7 @@ export default function SettingsUsersPage() {
       name: u.name,
       department: u.department ?? "",
       jobTitle: u.jobTitle ?? "",
-      roleId: u.roleId ?? "",
+      duty: u.duty ?? "",
       status: u.status as UserStatus,
     });
     setEditingUserId(u.id);
@@ -141,7 +170,7 @@ export default function SettingsUsersPage() {
       name: editForm.name.trim(),
       department: trimOptional(editForm.department),
       jobTitle: trimOptional(editForm.jobTitle),
-      roleId: trimOptional(editForm.roleId),
+      duty: trimOptional(editForm.duty),
       status: editForm.status,
     });
     setEditingUserId(null);
@@ -155,6 +184,46 @@ export default function SettingsUsersPage() {
     setEditingUserId(null);
     setEditForm(null);
   };
+
+  /** 부서/팀 드롭다운 렌더 */
+  const renderDeptSelect = (value: string, onChange: (v: string) => void, disabled?: boolean) => (
+    <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass} disabled={disabled} onClick={(e) => e.stopPropagation()}>
+      <option value="">미지정</option>
+      {orgDepts.map((dept) => {
+        const teams = orgTeams.filter((t) => t.departmentId === dept.id);
+        return teams.length > 0 ? (
+          <optgroup key={dept.id} label={dept.name}>
+            <option value={dept.name}>{dept.name} (본부)</option>
+            {teams.map((t) => (
+              <option key={t.id} value={t.name}>{t.name}</option>
+            ))}
+          </optgroup>
+        ) : (
+          <option key={dept.id} value={dept.name}>{dept.name}</option>
+        );
+      })}
+    </select>
+  );
+
+  /** 직급 드롭다운 렌더 */
+  const renderPositionSelect = (value: string, onChange: (v: string) => void, disabled?: boolean) => (
+    <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass} disabled={disabled} onClick={(e) => e.stopPropagation()}>
+      <option value="">미지정</option>
+      {orgPositions.map((p) => (
+        <option key={p.id} value={p.name}>{p.name}</option>
+      ))}
+    </select>
+  );
+
+  /** 직무(역할) 드롭다운 렌더 */
+  const renderDutySelect = (value: string, onChange: (v: string) => void, disabled?: boolean) => (
+    <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass} disabled={disabled} onClick={(e) => e.stopPropagation()}>
+      <option value="">미지정</option>
+      {orgDuties.map((d) => (
+        <option key={d.id} value={d.name}>{d.name}</option>
+      ))}
+    </select>
+  );
 
   return (
     <>
@@ -176,17 +245,50 @@ export default function SettingsUsersPage() {
                 placeholder="검색 (이름/이메일/부서/직책)"
                 className={inputClass + " max-w-xs"}
               />
-              <CardActionBar
-                isEditing={!!editingUserId}
-                hasSelection={!!selectedUserId}
-                onEdit={handleEditStart}
-                onCancel={handleEditCancel}
-                onDelete={handleDelete}
-                onSave={handleEditSave}
-                adds={[{ label: "추가", onClick: () => { setShowAddRow(true); setAddForm(emptyForm); } }]}
-              />
+              <div className="flex items-center gap-2">
+                {selectedUserId && !editingUserId && (
+                  <button
+                    type="button"
+                    onClick={() => resetPwMutation.mutate(selectedUserId)}
+                    disabled={resetPwMutation.isPending}
+                    className="rounded border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted/50 disabled:opacity-50"
+                  >
+                    PW 초기화
+                  </button>
+                )}
+                <CardActionBar
+                  isEditing={!!editingUserId}
+                  hasSelection={!!selectedUserId}
+                  onEdit={handleEditStart}
+                  onCancel={handleEditCancel}
+                  onDelete={handleDelete}
+                  onSave={handleEditSave}
+                  adds={[{ label: "추가", onClick: () => { setShowAddRow(true); setAddForm(emptyForm); } }]}
+                />
+              </div>
             </div>
           </CardHeader>
+          {tempPwResult && (
+            <div className="mx-6 mb-3 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm dark:border-blue-800 dark:bg-blue-950/40">
+              <span className="font-medium">{tempPwResult.userName}</span>
+              <span className="text-muted-foreground">임시 비밀번호:</span>
+              <code className="rounded bg-white px-2 py-0.5 font-mono text-sm dark:bg-background">
+                {tempPwResult.pw}
+              </code>
+              <button
+                onClick={() => { navigator.clipboard.writeText(tempPwResult.pw); toast.success("복사되었습니다."); }}
+                className="rounded border px-2 py-0.5 text-xs hover:bg-white dark:hover:bg-background"
+              >
+                복사
+              </button>
+              <button
+                onClick={() => setTempPwResult(null)}
+                className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+              >
+                닫기
+              </button>
+            </div>
+          )}
           <CardContent>
             {usersLoading ? (
               <p className="text-sm text-muted-foreground">불러오는 중...</p>
@@ -226,32 +328,13 @@ export default function SettingsUsersPage() {
                           />
                         </td>
                         <td className="py-1.5 pr-2">
-                          <input
-                            value={addForm.department}
-                            onChange={(e) => setAddForm((p) => ({ ...p, department: e.target.value }))}
-                            placeholder="부서"
-                            className={inputClass}
-                          />
+                          {renderDeptSelect(addForm.department, (v) => setAddForm((p) => ({ ...p, department: v })))}
                         </td>
                         <td className="py-1.5 pr-2">
-                          <input
-                            value={addForm.jobTitle}
-                            onChange={(e) => setAddForm((p) => ({ ...p, jobTitle: e.target.value }))}
-                            placeholder="직책"
-                            className={inputClass}
-                          />
+                          {renderPositionSelect(addForm.jobTitle, (v) => setAddForm((p) => ({ ...p, jobTitle: v })))}
                         </td>
                         <td className="py-1.5 pr-2">
-                          <select
-                            value={addForm.roleId}
-                            onChange={(e) => setAddForm((p) => ({ ...p, roleId: e.target.value }))}
-                            className={inputClass}
-                          >
-                            <option value="">미지정</option>
-                            {roles.map((r) => (
-                              <option key={r.id} value={r.id}>{r.name}</option>
-                            ))}
-                          </select>
+                          {renderDutySelect(addForm.duty, (v) => setAddForm((p) => ({ ...p, duty: v })))}
                         </td>
                         <td className="py-1.5 pr-2 text-muted-foreground" colSpan={2}>
                           <div className="flex gap-1">
@@ -300,40 +383,19 @@ export default function SettingsUsersPage() {
                             </td>
                             <td className="py-2 pr-2 text-muted-foreground">{u.email}</td>
                             <td className="py-2 pr-2">
-                              {isEditing ? (
-                                <input
-                                  value={editForm!.department}
-                                  onChange={(e) => setEditForm((p) => p && ({ ...p, department: e.target.value }))}
-                                  className={inputClass}
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              ) : (u.department ?? "-")}
+                              {isEditing
+                                ? renderDeptSelect(editForm!.department, (v) => setEditForm((p) => p && ({ ...p, department: v })))
+                                : (u.department ?? "-")}
                             </td>
                             <td className="py-2 pr-2">
-                              {isEditing ? (
-                                <input
-                                  value={editForm!.jobTitle}
-                                  onChange={(e) => setEditForm((p) => p && ({ ...p, jobTitle: e.target.value }))}
-                                  className={inputClass}
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              ) : (u.jobTitle ?? "-")}
+                              {isEditing
+                                ? renderPositionSelect(editForm!.jobTitle, (v) => setEditForm((p) => p && ({ ...p, jobTitle: v })))
+                                : (u.jobTitle ?? "-")}
                             </td>
                             <td className="py-2 pr-2">
-                              <select
-                                value={isEditing ? editForm!.roleId : (u.roleId ?? "")}
-                                onChange={(e) => {
-                                  if (isEditing) setEditForm((p) => p && ({ ...p, roleId: e.target.value }));
-                                }}
-                                className={inputClass}
-                                disabled={rolesLoading || (!isEditing)}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <option value="">미지정</option>
-                                {roles.map((r) => (
-                                  <option key={r.id} value={r.id}>{r.name}</option>
-                                ))}
-                              </select>
+                              {isEditing
+                                ? renderDutySelect(editForm!.duty, (v) => setEditForm((p) => p && ({ ...p, duty: v })))
+                                : renderDutySelect(u.duty ?? "", () => {}, true)}
                             </td>
                             <td className="py-2 pr-2">
                               <select

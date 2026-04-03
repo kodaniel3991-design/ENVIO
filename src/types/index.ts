@@ -185,6 +185,7 @@ export interface UserItem {
   department?: string;
   jobTitle?: string;
   roleId?: string;
+  duty?: string;
   status: UserStatus;
   lastLoginAt?: string;
   createdAt?: string;

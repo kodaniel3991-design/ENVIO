@@ -103,7 +103,7 @@ const STORAGE_KEY = "esg_setup_wizard";
 // 모듈 레벨 구독 목록 — 같은 탭 내 모든 훅 인스턴스를 동기화
 const listeners = new Set<() => void>();
 function notifyAll() {
-  listeners.forEach((fn) => fn());
+  queueMicrotask(() => listeners.forEach((fn) => fn()));
 }
 
 function loadFromStorage(): WizardState {

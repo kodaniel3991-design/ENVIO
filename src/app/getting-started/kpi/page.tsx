@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useWizardStore } from "../wizard-store";
+import { useQuery } from "@tanstack/react-query";
+import { useWizardStore, type KpiData } from "../wizard-store";
 import {
-  ALL_KPI,
+  fetchKpiCatalog,
   getAiRecommendation,
   getKpiRecommendationsByFrameworks,
   getMatchingFrameworks,
+  type KpiCatalog,
   type KpiItem,
 } from "@/lib/ai-recommendations";
 import { Sparkles, ArrowLeft, ArrowRight, Leaf, Users, Scale, Check, BarChart3 } from "lucide-react";
@@ -124,12 +126,19 @@ export default function KpiPage() {
   const { state, hydrated, updateKpi, markStepComplete } = useWizardStore();
   const { kpi, organization, framework } = state;
 
+  // DB 카탈로그 fetch
+  const { data: catalog, isLoading: catalogLoading } = useQuery<KpiCatalog>({
+    queryKey: ["kpi-catalog"],
+    queryFn: fetchKpiCatalog,
+    staleTime: 10 * 60 * 1000,
+  });
+
   const selectedFrameworks = framework.selected;
-  const fwRec = getKpiRecommendationsByFrameworks(selectedFrameworks);
+  const fwRec = getKpiRecommendationsByFrameworks(selectedFrameworks, catalog);
   const hasFwRec = fwRec.environmental.length > 0 || fwRec.social.length > 0 || fwRec.governance.length > 0;
 
   // 산업 AI 추천 — 카테고리별 폴백으로 항상 계산
-  const aiRec = organization.industry ? getAiRecommendation(organization.industry) : null;
+  const aiRec = organization.industry ? getAiRecommendation(organization.industry, catalog) : null;
 
   // 카테고리별 하이브리드 추천: 프레임워크 매칭이 있으면 사용, 없으면 산업 AI 폴백
   const mergedRec = {
@@ -138,13 +147,11 @@ export default function KpiPage() {
     governance: fwRec.governance.length > 0 ? fwRec.governance : (aiRec?.kpi.governance ?? []),
   };
 
-  // hydrated 후 실행 — KPI가 비어있으면 추천 KPI를 기본 선택
-  // localStorage에서 직접 읽어 closure 지연 문제 방지
+  // hydrated + catalog 로드 후 — 프레임워크/산업 기반 추천 KPI를 기본 선택
+  const [recApplied, setRecApplied] = useState(false);
   useEffect(() => {
-    if (!hydrated) return;
-    if (kpi.environmental.length > 0 || kpi.social.length > 0 || kpi.governance.length > 0) return;
+    if (!hydrated || recApplied || !catalog) return;
 
-    // closure의 state가 아직 반영 안 될 수 있으므로 localStorage에서 직접 읽기
     let frameworks = state.framework.selected;
     let industry = state.organization.industry;
     try {
@@ -156,20 +163,19 @@ export default function KpiPage() {
       }
     } catch { /* noop */ }
 
-    const rec = getKpiRecommendationsByFrameworks(frameworks);
-    const industryRec = industry ? getAiRecommendation(industry) : null;
-
-    const merged = {
-      environmental: rec.environmental.length > 0 ? rec.environmental : (industryRec?.kpi.environmental ?? []),
-      social: rec.social.length > 0 ? rec.social : (industryRec?.kpi.social ?? []),
-      governance: rec.governance.length > 0 ? rec.governance : (industryRec?.kpi.governance ?? []),
+    // 필수(critical) 항목만 자동 선택
+    const criticalKpi: KpiData = {
+      environmental: catalog.environmental.filter((k) => k.priority === "critical").map((k) => k.name),
+      social: catalog.social.filter((k) => k.priority === "critical").map((k) => k.name),
+      governance: catalog.governance.filter((k) => k.priority === "critical").map((k) => k.name),
     };
 
-    if (merged.environmental.length > 0 || merged.social.length > 0 || merged.governance.length > 0) {
-      updateKpi(merged);
+    if (criticalKpi.environmental.length > 0 || criticalKpi.social.length > 0 || criticalKpi.governance.length > 0) {
+      updateKpi(criticalKpi);
     }
+    setRecApplied(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated]);
+  }, [hydrated, catalog]);
 
   const toggle = (category: KpiCategory, item: KpiItem) => {
     const current = kpi[category];
@@ -190,7 +196,7 @@ export default function KpiPage() {
     const items: { code: string; name: string; esgDomain: string; category: string; unit: string; description: string }[] = [];
     (["environmental", "social", "governance"] as KpiCategory[]).forEach((domain) => {
       kpi[domain].forEach((name) => {
-        const item = ALL_KPI[domain].find((k) => k.name === name);
+        const item = (catalog ?? { environmental: [], social: [], governance: [] })[domain].find((k) => k.name === name);
         if (!item) return;
         items.push({
           code: `${domain.slice(0, 3).toUpperCase()}-${name.slice(0, 46)}`,
@@ -226,8 +232,16 @@ export default function KpiPage() {
   // 현재 탭의 추천 목록: 카테고리별 하이브리드 (프레임워크 우선, 없으면 산업 AI 폴백)
   const recommended: string[] = mergedRec[activeTab];
 
-  const items = ALL_KPI[activeTab];
+  const items = catalog?.[activeTab] ?? [];
   const groupSpans = calcGroupSpans(items);
+
+  if (catalogLoading) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-6">
+        <p className="text-sm text-muted-foreground">KPI 카탈로그를 불러오는 중...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-border bg-card p-6">
@@ -278,6 +292,7 @@ export default function KpiPage() {
             const Icon = cat.icon;
             const count = kpi[cat.key].length;
             const recCount = mergedRec[cat.key].length;
+            const criticalCount = (catalog?.[cat.key] ?? []).filter((k) => k.priority === "critical").length;
             const isActive = activeTab === cat.key;
             return (
               <button
@@ -295,6 +310,11 @@ export default function KpiPage() {
                   {count > 0 && (
                     <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-bold text-white", cat.badgeClass)}>
                       {count}
+                    </span>
+                  )}
+                  {criticalCount > 0 && (
+                    <span className="rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-bold text-destructive">
+                      필수 {criticalCount}
                     </span>
                   )}
                   {recCount > 0 && (
@@ -328,6 +348,7 @@ export default function KpiPage() {
               {items.map((item, idx) => {
                 const selected = kpi[activeTab].includes(item.name);
                 const isRec = recommended.includes(item.name);
+                const isCritical = item.priority === "critical";
                 const matchingFws = hasFwRec ? getMatchingFrameworks(item, selectedFrameworks) : [];
                 const isFirstInGroup = groupSpans.has(idx);
                 const rowSpan = groupSpans.get(idx);
@@ -338,7 +359,8 @@ export default function KpiPage() {
                     onClick={() => toggle(activeTab, item)}
                     className={cn(
                       "cursor-pointer transition-colors hover:bg-muted/30",
-                      selected ? activeCat.rowSelectedClass : ""
+                      selected ? activeCat.rowSelectedClass : "",
+                      isCritical && !selected ? "bg-destructive/[0.03]" : ""
                     )}
                   >
                     {/* 구분 (rowspan) */}
@@ -367,7 +389,11 @@ export default function KpiPage() {
                     {/* KPI명 + 프레임워크 배지 */}
                     <td className="whitespace-nowrap px-3 py-2.5">
                       <div className="flex items-center gap-1.5">
-                        {isRec && <Sparkles className="h-3 w-3 shrink-0 text-carbon-success" />}
+                        {isCritical ? (
+                          <span className="rounded bg-destructive/15 px-1 py-0.5 text-[9px] font-bold text-destructive">필수</span>
+                        ) : isRec ? (
+                          <Sparkles className="h-3 w-3 shrink-0 text-carbon-success" />
+                        ) : null}
                         <span className={cn("font-medium", selected ? "text-foreground" : "text-foreground/80")}>
                           {item.name}
                         </span>

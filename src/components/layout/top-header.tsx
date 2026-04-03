@@ -28,6 +28,7 @@ export function TopHeader() {
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
   const { pages, currentPath, remove } = useRecentPages();
+
   const { data: org } = useQuery<{ organizationName: string }>({
     queryKey: ["organization-name"],
     queryFn: async () => { const r = await fetch("/api/organization"); return r.json(); },

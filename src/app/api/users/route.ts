@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { getAuthOrg, AuthError } from "@/lib/auth";
 
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
           id: r.id, name: r.name, email: r.email,
           department: r.department, jobTitle: r.jobTitle,
           roleId: r.roleId, roleName: r.role?.name ?? null,
+          duty: r.duty,
           status: r.status, lastLoginAt: r.lastLoginAt,
         }))
       );
@@ -52,18 +54,21 @@ export async function POST(req: NextRequest) {
 
     if (action === "save-user") {
       const { item } = body;
+      const userId = item.id || crypto.randomUUID();
       await prisma.user.upsert({
-        where: { id: item.id },
+        where: { id: userId },
         update: {
           name: item.name, email: item.email,
           department: item.department ?? null, jobTitle: item.jobTitle ?? null,
-          roleId: item.roleId ?? null, status: item.status ?? "active",
+          roleId: item.roleId ?? null, duty: item.duty ?? null,
+          status: item.status ?? "active",
         },
         create: {
-          id: item.id, organizationId,
+          id: userId, organizationId,
           name: item.name, email: item.email,
           department: item.department ?? null, jobTitle: item.jobTitle ?? null,
-          roleId: item.roleId ?? null, status: item.status ?? "active",
+          roleId: item.roleId ?? null, duty: item.duty ?? null,
+          status: item.status ?? "active",
         },
       });
       return NextResponse.json({ ok: true });
@@ -77,6 +82,17 @@ export async function POST(req: NextRequest) {
         create: { id: item.id, name: item.name, description: item.description ?? null, systemCode: item.systemCode ?? null },
       });
       return NextResponse.json({ ok: true });
+    }
+
+    if (action === "reset-password") {
+      const user = await prisma.user.findUnique({ where: { id: body.userId }, select: { organizationId: true, name: true } });
+      if (!user || user.organizationId !== organizationId) {
+        return NextResponse.json({ error: "접근 권한이 없습니다." }, { status: 403 });
+      }
+      const tempPassword = `temp${Math.random().toString(36).slice(2, 10)}!`;
+      const hashed = await bcrypt.hash(tempPassword, 10);
+      await prisma.user.update({ where: { id: body.userId }, data: { password: hashed } });
+      return NextResponse.json({ ok: true, tempPassword });
     }
 
     if (action === "delete-user") {

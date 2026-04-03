@@ -57,6 +57,9 @@ export default function LoginPage() {
         localStorage.removeItem(AUTO_LOGIN_KEY);
       }
 
+      // 이전 세션의 최근 방문 페이지 초기화
+      localStorage.removeItem("esg_recent_pages");
+
       // 플랫폼 관리자는 /admin으로, 일반 사용자는 /dashboard로
       const meRes = await fetch("/api/auth/me");
       const me = await meRes.json();

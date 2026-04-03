@@ -274,6 +274,28 @@ model CommutingWorkDay {
   @@map("commuting_work_days")
 }
 
+/// 플랫폼 전체 KPI 카탈로그 (관리자 관리)
+model KpiCatalog {
+  id          Int      @id @default(autoincrement())
+  esgDomain   String   @map("esg_domain") @db.VarChar(20)
+  grp         String   @map("grp") @db.VarChar(100)
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  reason      String?  @db.Text
+  criteria    String?  @db.Text
+  /// JSON 배열: ["GRI","ISSB","CDP","K-ESG","TCFD"]
+  frameworks  String?  @db.Text
+  /// critical: 프레임워크 필수 요구, recommended: 산업/규모별 권장
+  priority    String   @default("recommended") @db.VarChar(20)
+  sortOrder   Int      @default(0) @map("sort_order")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([esgDomain, name], name: "uq_kpi_catalog")
+  @@map("kpi_catalog")
+}
+
 model KpiMaster {
   id             String           @id @db.VarChar(36)
   organizationId Int?             @map("organization_id")
@@ -524,6 +546,8 @@ model User {
   department      String?       @db.VarChar(255)
   jobTitle        String?       @map("job_title") @db.VarChar(255)
   roleId          String?       @map("role_id") @db.VarChar(36)
+  /// 직무 (OrgDuty 이름)
+  duty            String?       @db.VarChar(255)
   status          String        @default("active") @db.VarChar(50)
   lastLoginAt     DateTime?     @map("last_login_at")
   createdAt       DateTime      @default(now()) @map("created_at")

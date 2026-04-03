@@ -54,16 +54,20 @@ const TYPE_ADVANCED: Record<string, { label: string; options: string[] }[]> = {
   ],
 };
 
+type WorksiteOption = { id: string; name: string; address: string };
+
 function FacilityCard({
   facility,
   index,
   canRemove,
+  worksites,
   onUpdate,
   onRemove,
 }: {
   facility: FacilityData;
   index: number;
   canRemove: boolean;
+  worksites: WorksiteOption[];
   onUpdate: (data: Partial<FacilityData>) => void;
   onRemove: () => void;
 }) {
@@ -131,29 +135,50 @@ function FacilityCard({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {/* 사업장명 */}
+        {/* 사업장 선택 */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">
-            사업장명 <span className="text-destructive">*</span>
+            사업장 <span className="text-destructive">*</span>
           </label>
-          <input
-            type="text"
-            value={facility.name}
-            onChange={(e) => onUpdate({ name: e.target.value })}
-            placeholder="예: 인천 본사 / 군산공장"
-            className="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary transition-colors"
-          />
+          {worksites.length > 0 ? (
+            <select
+              value={facility.name}
+              onChange={(e) => {
+                const ws = worksites.find((w) => w.name === e.target.value);
+                if (ws) onUpdate({ id: ws.id, name: ws.name, location: ws.address });
+                else onUpdate({ name: "", location: "" });
+              }}
+              className="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary transition-colors"
+            >
+              <option value="">사업장을 선택하세요</option>
+              {worksites.map((ws) => (
+                <option key={ws.id} value={ws.name}>{ws.name}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={facility.name}
+              onChange={(e) => onUpdate({ name: e.target.value })}
+              placeholder="예: 인천 본사 / 군산공장"
+              className="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary transition-colors"
+            />
+          )}
         </div>
 
-        {/* 주소 */}
+        {/* 주소 (선택 시 자동 입력, 읽기 전용) */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">주소</label>
           <input
             type="text"
             value={facility.location}
-            onChange={(e) => onUpdate({ location: e.target.value })}
-            placeholder="예: 인천광역시 남동구 인하로 100"
-            className="h-9 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary transition-colors"
+            readOnly={worksites.length > 0}
+            onChange={(e) => { if (worksites.length === 0) onUpdate({ location: e.target.value }); }}
+            placeholder={worksites.length > 0 ? "사업장 선택 시 자동 입력" : "예: 인천광역시 남동구 인하로 100"}
+            className={cn(
+              "h-9 rounded-lg border border-border px-3 text-sm outline-none transition-colors",
+              worksites.length > 0 ? "bg-muted/50 text-muted-foreground" : "bg-background focus:border-primary"
+            )}
           />
         </div>
 
@@ -358,6 +383,20 @@ export default function FacilityPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
 
+  // 조직 설정에 등록된 사업장 목록
+  const [registeredWorksites, setRegisteredWorksites] = useState<WorksiteOption[]>([]);
+
+  useEffect(() => {
+    fetch("/api/organization")
+      .then((r) => r.json())
+      .then((org) => {
+        if (org.worksites?.length) {
+          setRegisteredWorksites(org.worksites.map((w: any) => ({ id: w.id, name: w.name, address: w.address ?? "" })));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
 
@@ -448,6 +487,7 @@ export default function FacilityPage() {
           facility={facility}
           index={index}
           canRemove={facilities.length > 1}
+          worksites={registeredWorksites}
           onUpdate={(data) => updateFacilityById(facility.id, data)}
           onRemove={() => removeFacility(facility.id)}
         />
