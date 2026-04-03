@@ -357,18 +357,14 @@ export default function FacilityPage() {
   const { state, hydrated, addFacility, updateFacilityById, removeFacility, markStepComplete, save } = useWizardStore();
   const facilities = state.facilities ?? [];
 
-  // DB에서 사업장 복원 및 완료 표시
+  // DB에서 사업장 복원 및 완료 표시 — DB를 항상 source of truth로 사용
   useEffect(() => {
     if (!hydrated) return;
     fetch("/api/organization")
       .then((r) => r.json())
       .then((org) => {
         if (!org.worksites?.length) return;
-        // 이미 등록된 사업장이 있으면 step 2 완료 표시
         markStepComplete(2);
-        // localStorage가 비어있으면 DB에서 복원
-        const hasData = facilities.some((f) => f.name.trim());
-        if (hasData) return;
         const restored = org.worksites.map((w: any) => ({
           id: w.id,
           name: w.name,
