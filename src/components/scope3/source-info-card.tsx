@@ -79,7 +79,7 @@ export function Scope3SourceInfoCard({
   const addRow = () => {
     const newRow: Scope3FacilityRow = {
       id: genId(),
-      facilityName: worksiteName ?? "",
+      facilityName: worksiteName ? `${worksiteName}_` : "",
       activityType: "구입상품·서비스",
       unit: "ton",
       dataMethod: "청구서",

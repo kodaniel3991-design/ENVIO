@@ -65,7 +65,7 @@ export function Scope2SourceInfoCard({
   const addRow = () => {
     const newRow: Scope2FacilityRow = {
       id: genId(),
-      facilityName: worksiteName ?? "",
+      facilityName: worksiteName ? `${worksiteName}_` : "",
       energyType: "Electricity",
       unit: "MWh",
       dataMethod: "고지서",

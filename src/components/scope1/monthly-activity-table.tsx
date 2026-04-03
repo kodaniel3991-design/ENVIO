@@ -10,7 +10,8 @@ import {
   SCOPE1_FACTOR_SOURCES,
 } from "@/lib/scope1-utils";
 import { useMemo, useState, useRef, useEffect } from "react";
-import { Paperclip, Upload, X, FileText, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { Paperclip, Upload, X, FileText, ChevronLeft, ChevronRight, Eye, Sparkles, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   useAttachments,
@@ -179,6 +180,42 @@ export function MonthlyActivityTable({
     Array.from(files).forEach((file) => {
       uploadMutation.mutate({ file, facilityId, year, month: monthIdx + 1 });
     });
+  };
+
+  // OCR 상태
+  const [ocrLoading, setOcrLoading] = useState<number | null>(null); // attachmentId
+  const [ocrResult, setOcrResult] = useState<{ usage: number; unit: string; type: string; confidence: number } | null>(null);
+
+  const handleOcr = async (att: AttachmentMeta) => {
+    setOcrLoading(att.id);
+    setOcrResult(null);
+    try {
+      const res = await fetch("/api/attachments/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attachmentId: att.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error ?? "OCR 처리에 실패했습니다."); return; }
+
+      const item = Array.isArray(data.results) ? data.results[0] : data.results;
+      if (!item?.usage) { toast.error("사용량을 읽을 수 없습니다."); return; }
+
+      setOcrResult({ usage: item.usage, unit: item.unit ?? "", type: item.type ?? "", confidence: item.confidence ?? 0 });
+    } catch {
+      toast.error("OCR 처리 중 오류가 발생했습니다.");
+    } finally {
+      setOcrLoading(null);
+    }
+  };
+
+  const applyOcrResult = () => {
+    if (!ocrResult || selectedMonth === null) return;
+    const next = [...activityByMonth];
+    next[selectedMonth] = ocrResult.usage;
+    onChangeActivity(next);
+    toast.success(`${MONTH_LABELS[selectedMonth]} 활동량에 ${formatNumber(ocrResult.usage, 4)} 적용됨`);
+    setOcrResult(null);
   };
 
 
@@ -457,6 +494,18 @@ export function MonthlyActivityTable({
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
+                        {isImage && (
+                          <button
+                            type="button"
+                            onClick={() => handleOcr(att)}
+                            disabled={ocrLoading === att.id}
+                            className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+                            title="AI로 사용량 읽기"
+                          >
+                            {ocrLoading === att.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                            AI 읽기
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => setViewerAtt(att)}
@@ -486,6 +535,39 @@ export function MonthlyActivityTable({
                   <Upload className="h-3 w-3" />
                   파일 추가
                 </button>
+              </div>
+            )}
+
+            {/* OCR 결과 확인/적용 */}
+            {ocrResult && selectedMonth !== null && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+                <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  AI 사용량 추출 결과
+                </p>
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="text-muted-foreground">유형:</span>
+                  <span className="font-medium">{ocrResult.type}</span>
+                  <span className="text-muted-foreground">사용량:</span>
+                  <span className="font-bold text-primary text-lg">{formatNumber(ocrResult.usage, 4)}</span>
+                  <span className="text-muted-foreground">{ocrResult.unit}</span>
+                  <span className={cn(
+                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                    ocrResult.confidence >= 0.9 ? "bg-green-100 text-green-700" :
+                    ocrResult.confidence >= 0.7 ? "bg-yellow-100 text-yellow-700" :
+                    "bg-red-100 text-red-700"
+                  )}>
+                    확신도 {Math.round(ocrResult.confidence * 100)}%
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={applyOcrResult}>
+                    {MONTH_LABELS[selectedMonth]} 활동량에 적용
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setOcrResult(null)}>
+                    취소
+                  </Button>
+                </div>
               </div>
             )}
 

@@ -185,7 +185,7 @@ export function SourceInfoCard({
     const isMobile = categoryId === "mobile";
     const newRow: FacilityRow = {
       id: genId(),
-      facilityName: isMobile && worksiteName ? worksiteName : "",
+      facilityName: worksiteName ? `${worksiteName}_` : "",
       fuelName: isMobile ? "경유" : "도시가스(LNG)",
       unit: isMobile ? "L" : "Nm3",
       dataMethod: isMobile ? "청구서" : "청구서",
