@@ -149,10 +149,14 @@ function buildLayout() {
 
   // Phase 2: 이중 중대성 평가
   const p2x = p1x + colGap + 250;
-  nodes.push({ id: "p2", type: "phaseHeader", position: { x: p2x, y: topY }, data: { label: "이중 중대성 평가", sublabel: "2축 점수 입력", icon: ClipboardCheck, phase: "assess" } });
-  edges.push({ id: "p1-p2", source: "p1", target: "p2", style: lineStyle("#6366f1"), markerEnd: arrow("#6366f1"), label: "22개 이슈", labelStyle: { fontSize: 10, fill: "#6366f1" } });
+  nodes.push({ id: "p1-ai", type: "subItem", position: { x: p1x + 520, y: topY + rowGap }, data: { label: "AI 추천 점수", sublabel: "산업군 기반 초기 점수", icon: Sparkles, phase: "issue" } });
+  edges.push({ id: "p1-ai-e", source: "p1", target: "p1-ai", sourceHandle: "bottom", style: lineStyle("#d97706", true), markerEnd: arrow("#d97706") });
 
-  nodes.push({ id: "p2-impact", type: "subItem", position: { x: p2x - 30, y: topY + rowGap }, data: { label: "영향 중대성", sublabel: "환경·사회 영향 (1~5)", icon: Target, phase: "assess" } });
+  nodes.push({ id: "p2", type: "phaseHeader", position: { x: p2x, y: topY }, data: { label: "이중 중대성 평가", sublabel: "GRI 3요소 + 재무", icon: ClipboardCheck, phase: "assess" } });
+  edges.push({ id: "p1-p2", source: "p1", target: "p2", style: lineStyle("#6366f1"), markerEnd: arrow("#6366f1"), label: "22개 이슈", labelStyle: { fontSize: 10, fill: "#6366f1" } });
+  edges.push({ id: "ai-p2", source: "p1-ai", target: "p2", style: lineStyle("#6366f1", true), markerEnd: arrow("#6366f1") });
+
+  nodes.push({ id: "p2-impact", type: "subItem", position: { x: p2x - 30, y: topY + rowGap }, data: { label: "영향 중대성", sublabel: "규모·범위·복구불가성 평균", icon: Target, phase: "assess" } });
   nodes.push({ id: "p2-financial", type: "subItem", position: { x: p2x + subGap, y: topY + rowGap }, data: { label: "재무 중대성", sublabel: "기업 리스크/기회 (1~5)", icon: BarChart3, phase: "assess" } });
 
   edges.push({ id: "p2-imp-e", source: "p2", target: "p2-impact", sourceHandle: "bottom", style: lineStyle("#6366f1"), markerEnd: arrow("#6366f1") });
@@ -164,12 +168,12 @@ function buildLayout() {
 
   // Phase 3: 매트릭스
   const p3x = 0;
-  nodes.push({ id: "p3", type: "phaseHeader", position: { x: p3x, y: botY }, data: { label: "이중 중대성 매트릭스", sublabel: "4분면 분류", icon: Layers, phase: "matrix" } });
+  nodes.push({ id: "p3", type: "phaseHeader", position: { x: p3x, y: botY }, data: { label: "이중 중대성 매트릭스", sublabel: "CSRD: 둘 중 하나 ≥ 3.5", icon: Layers, phase: "matrix" } });
   edges.push({ id: "p2-p3", source: "p2", target: "p3", style: lineStyle("#16a34a"), markerEnd: arrow("#16a34a"), label: "점수 반영", labelStyle: { fontSize: 10, fill: "#16a34a" } });
 
-  nodes.push({ id: "p3-dual", type: "subItem", position: { x: p3x - 80, y: botY + rowGap }, data: { label: "이중 중대 (핵심)", sublabel: "영향+재무 ≥ 3.5", icon: ShieldCheck, phase: "matrix" } });
-  nodes.push({ id: "p3-impact-only", type: "subItem", position: { x: p3x + 120, y: botY + rowGap }, data: { label: "영향 중대", sublabel: "영향 ≥ 3.5", icon: Leaf, phase: "matrix" } });
-  nodes.push({ id: "p3-fin-only", type: "subItem", position: { x: p3x + 300, y: botY + rowGap }, data: { label: "재무 중대", sublabel: "재무 ≥ 3.5", icon: BarChart3, phase: "matrix" } });
+  nodes.push({ id: "p3-dual", type: "subItem", position: { x: p3x - 80, y: botY + rowGap }, data: { label: "이중 중대 (핵심)", sublabel: "영향 AND 재무 ≥ 3.5", icon: ShieldCheck, phase: "matrix" } });
+  nodes.push({ id: "p3-impact-only", type: "subItem", position: { x: p3x + 130, y: botY + rowGap }, data: { label: "영향 중대", sublabel: "영향만 ≥ 3.5", icon: Leaf, phase: "matrix" } });
+  nodes.push({ id: "p3-fin-only", type: "subItem", position: { x: p3x + 310, y: botY + rowGap }, data: { label: "재무 중대", sublabel: "재무만 ≥ 3.5", icon: BarChart3, phase: "matrix" } });
 
   edges.push({ id: "p3-d-e", source: "p3", target: "p3-dual", sourceHandle: "bottom", style: lineStyle("#16a34a"), markerEnd: arrow("#16a34a") });
   edges.push({ id: "p3-i-e", source: "p3", target: "p3-impact-only", sourceHandle: "bottom", style: lineStyle("#16a34a"), markerEnd: arrow("#16a34a") });
@@ -180,11 +184,13 @@ function buildLayout() {
   nodes.push({ id: "p4", type: "phaseHeader", position: { x: p4x, y: botY }, data: { label: "KPI 자동 연결", sublabel: "핵심 이슈 → KPI 매핑", icon: Link2, phase: "result" } });
   edges.push({ id: "p3-p4", source: "p3", target: "p4", style: lineStyle("#78716c"), markerEnd: arrow("#78716c"), label: "핵심 이슈", labelStyle: { fontSize: 10, fill: "#78716c" } });
 
-  nodes.push({ id: "p4-critical", type: "subItem", position: { x: p4x - 30, y: botY + rowGap }, data: { label: "필수 KPI", sublabel: "프레임워크 필수 요구", icon: CheckCircle, phase: "result" } });
-  nodes.push({ id: "p4-rec", type: "subItem", position: { x: p4x + subGap, y: botY + rowGap }, data: { label: "추천 KPI", sublabel: "산업·규모별 권장", icon: Sparkles, phase: "result" } });
+  nodes.push({ id: "p4-critical", type: "subItem", position: { x: p4x - 60, y: botY + rowGap }, data: { label: "의무 (Critical)", sublabel: "프레임워크 필수 요구", icon: ShieldCheck, phase: "result" } });
+  nodes.push({ id: "p4-material", type: "subItem", position: { x: p4x + 130, y: botY + rowGap }, data: { label: "중대 (Material)", sublabel: "중대성 평가 핵심 이슈", icon: CheckCircle, phase: "result" } });
+  nodes.push({ id: "p4-general", type: "subItem", position: { x: p4x + 320, y: botY + rowGap }, data: { label: "일반 (General)", sublabel: "기본 모니터링", icon: Sparkles, phase: "result" } });
 
   edges.push({ id: "p4-c-e", source: "p4", target: "p4-critical", sourceHandle: "bottom", style: lineStyle("#78716c"), markerEnd: arrow("#78716c") });
-  edges.push({ id: "p4-r-e", source: "p4", target: "p4-rec", sourceHandle: "bottom", style: lineStyle("#78716c"), markerEnd: arrow("#78716c") });
+  edges.push({ id: "p4-m-e", source: "p4", target: "p4-material", sourceHandle: "bottom", style: lineStyle("#78716c"), markerEnd: arrow("#78716c") });
+  edges.push({ id: "p4-g-e", source: "p4", target: "p4-general", sourceHandle: "bottom", style: lineStyle("#78716c"), markerEnd: arrow("#78716c") });
 
   // Phase 5: 보고서 반영
   const p5x = p4x + colGap + 100;
