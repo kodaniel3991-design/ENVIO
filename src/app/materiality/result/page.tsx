@@ -144,13 +144,20 @@ export default function ResultPage() {
           </div>
         </section>
 
-        {/* 3. 보고 대상 이슈 상세 */}
+        {/* 3. 이중 중대성 매트릭스 */}
         <section>
-          <h2 className="text-base font-bold border-b border-border pb-2 mb-3">3. 보고 대상 이슈 상세</h2>
+          <h2 className="text-base font-bold border-b border-border pb-2 mb-3">3. 이중 중대성 매트릭스</h2>
+          <p className="text-xs text-muted-foreground mb-3">X축: 영향 중대성 (환경·사회 영향) | Y축: 재무 중대성 (기업 리스크/기회) | 기준선: {THRESHOLD}</p>
+          <PrintableMatrix issues={issues} getImpact={getImpact} getFinancial={getFinancial} threshold={THRESHOLD} />
+        </section>
+
+        {/* 4. 보고 대상 이슈 상세 */}
+        <section>
+          <h2 className="text-base font-bold border-b border-border pb-2 mb-3">4. 보고 대상 이슈 상세</h2>
 
           {dual.length > 0 && (
             <>
-              <h3 className="text-sm font-semibold text-destructive mt-4 mb-2">3-1. 이중 중대 이슈 ({dual.length}개)</h3>
+              <h3 className="text-sm font-semibold text-destructive mt-4 mb-2">4-1. 이중 중대 이슈 ({dual.length}개)</h3>
               <p className="text-xs text-muted-foreground mb-2">영향 중대성과 재무 중대성 모두 높아 최우선 관리가 필요한 이슈</p>
               <ReportTable issues={dual} getImpact={getImpact} getFinancial={getFinancial} />
             </>
@@ -158,7 +165,7 @@ export default function ResultPage() {
 
           {impactOnly.length > 0 && (
             <>
-              <h3 className="text-sm font-semibold text-green-700 mt-4 mb-2">3-2. 영향 중대 이슈 ({impactOnly.length}개)</h3>
+              <h3 className="text-sm font-semibold text-green-700 mt-4 mb-2">4-2. 영향 중대 이슈 ({impactOnly.length}개)</h3>
               <p className="text-xs text-muted-foreground mb-2">환경·사회에 대한 영향이 유의미하여 보고 대상인 이슈</p>
               <ReportTable issues={impactOnly} getImpact={getImpact} getFinancial={getFinancial} />
             </>
@@ -166,16 +173,16 @@ export default function ResultPage() {
 
           {financialOnly.length > 0 && (
             <>
-              <h3 className="text-sm font-semibold text-blue-700 mt-4 mb-2">3-3. 재무 중대 이슈 ({financialOnly.length}개)</h3>
+              <h3 className="text-sm font-semibold text-blue-700 mt-4 mb-2">4-3. 재무 중대 이슈 ({financialOnly.length}개)</h3>
               <p className="text-xs text-muted-foreground mb-2">기업 재무에 대한 리스크/기회가 유의미하여 보고 대상인 이슈</p>
               <ReportTable issues={financialOnly} getImpact={getImpact} getFinancial={getFinancial} />
             </>
           )}
         </section>
 
-        {/* 4. 전체 이슈 평가 결과 */}
+        {/* 5. 전체 이슈 평가 결과 */}
         <section>
-          <h2 className="text-base font-bold border-b border-border pb-2 mb-3">4. 전체 이슈 평가 결과</h2>
+          <h2 className="text-base font-bold border-b border-border pb-2 mb-3">5. 전체 이슈 평가 결과</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
@@ -266,6 +273,88 @@ function ReportTable({ issues, getImpact, getFinancial }: { issues: MaterialityI
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+const DIM_DOT_COLOR: Record<string, string> = { environment: "#22c55e", social: "#3b82f6", governance: "#d97706" };
+
+function PrintableMatrix({ issues, getImpact, getFinancial, threshold }: {
+  issues: MaterialityIssue[];
+  getImpact: (i: MaterialityIssue) => number;
+  getFinancial: (i: MaterialityIssue) => number;
+  threshold: number;
+}) {
+  const size = 400;
+  const pad = 40;
+  const toX = (v: number) => pad + ((v - 1) / 4) * (size - pad * 2);
+  const toY = (v: number) => size - pad - ((v - 1) / 4) * (size - pad * 2);
+  const thX = toX(threshold);
+  const thY = toY(threshold);
+
+  const assessed = issues.filter((i) => getImpact(i) > 0 && getFinancial(i) > 0);
+
+  return (
+    <div className="flex gap-6 items-start">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="border border-border rounded-lg bg-white shrink-0">
+        {/* 4분면 배경 */}
+        <rect x={pad} y={pad} width={thX - pad} height={thY - pad} fill="#f9fafb" />
+        <rect x={thX} y={pad} width={size - pad - thX} height={thY - pad} fill="#fef2f2" fillOpacity={0.5} />
+        <rect x={pad} y={thY} width={thX - pad} height={size - pad - thY} fill="#fafafa" />
+        <rect x={thX} y={thY} width={size - pad - thX} height={size - pad - thY} fill="#f0fdf4" fillOpacity={0.5} />
+
+        {/* 기준선 */}
+        <line x1={thX} y1={pad} x2={thX} y2={size - pad} stroke="#d1d5db" strokeWidth={1} strokeDasharray="4 3" />
+        <line x1={pad} y1={thY} x2={size - pad} y2={thY} stroke="#d1d5db" strokeWidth={1} strokeDasharray="4 3" />
+
+        {/* 외곽선 */}
+        <rect x={pad} y={pad} width={size - pad * 2} height={size - pad * 2} fill="none" stroke="#e5e7eb" strokeWidth={1} />
+
+        {/* 축 라벨 */}
+        <text x={size / 2} y={size - 8} textAnchor="middle" fontSize={10} fill="#6b7280">→ 영향 중대성 (Impact)</text>
+        <text x={12} y={size / 2} textAnchor="middle" fontSize={10} fill="#6b7280" transform={`rotate(-90, 12, ${size / 2})`}>↑ 재무 중대성 (Financial)</text>
+
+        {/* 4분면 라벨 */}
+        <text x={pad + 4} y={pad + 12} fontSize={8} fill="#9ca3af">재무 중대</text>
+        <text x={size - pad - 4} y={pad + 12} fontSize={8} fill="#dc2626" textAnchor="end" fontWeight={700}>이중 중대</text>
+        <text x={pad + 4} y={size - pad - 6} fontSize={8} fill="#d1d5db">비중대</text>
+        <text x={size - pad - 4} y={size - pad - 6} fontSize={8} fill="#16a34a" textAnchor="end">영향 중대</text>
+
+        {/* 눈금 */}
+        {[1, 2, 3, 4, 5].map((v) => (
+          <g key={v}>
+            <text x={toX(v)} y={size - pad + 14} textAnchor="middle" fontSize={9} fill="#9ca3af">{v}</text>
+            <text x={pad - 8} y={toY(v) + 3} textAnchor="end" fontSize={9} fill="#9ca3af">{v}</text>
+          </g>
+        ))}
+
+        {/* 데이터 포인트 */}
+        {assessed.map((issue) => {
+          const x = toX(getImpact(issue));
+          const y = toY(getFinancial(issue));
+          const color = DIM_DOT_COLOR[issue.dimension] ?? "#6b7280";
+          return (
+            <g key={issue.id}>
+              <circle cx={x} cy={y} r={6} fill={color} stroke="white" strokeWidth={2} opacity={0.9} />
+              <text x={x + 9} y={y + 3} fontSize={8} fill="#374151">{issue.name.length > 6 ? issue.name.slice(0, 6) + "…" : issue.name}</text>
+            </g>
+          );
+        })}
+      </svg>
+
+      {/* 범례 */}
+      <div className="text-xs space-y-2 pt-2">
+        <p className="font-semibold text-sm">범례</p>
+        <div className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full" style={{ background: "#22c55e" }} /> 환경 (E)</div>
+        <div className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full" style={{ background: "#3b82f6" }} /> 사회 (S)</div>
+        <div className="flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full" style={{ background: "#d97706" }} /> 거버넌스 (G)</div>
+        <div className="mt-3 pt-2 border-t border-border space-y-1 text-muted-foreground">
+          <p>점선: 기준선 ({threshold})</p>
+          <p>우상단: 이중 중대 (핵심)</p>
+          <p>우하단: 영향 중대</p>
+          <p>좌상단: 재무 중대</p>
+        </div>
+      </div>
     </div>
   );
 }
