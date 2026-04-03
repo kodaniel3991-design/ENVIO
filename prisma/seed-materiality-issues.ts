@@ -71,7 +71,7 @@ async function main() {
   let total = 0;
   for (const org of orgs) {
     let idx = 0;
-    for (const [, { domain, group }] of issueMap) {
+    for (const [, { domain, group }] of Array.from(issueMap)) {
       const dimension = DOMAIN_TO_DIMENSION[domain] ?? "environment";
       const prefix = dimension === "environment" ? "ENV" : dimension === "social" ? "SOC" : "GOV";
       const code = `${prefix}-${String(idx + 1).padStart(2, "0")}`;

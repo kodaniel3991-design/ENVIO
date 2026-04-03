@@ -76,7 +76,7 @@ export default function MaterialityIssuesPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? <p className="text-sm text-muted-foreground">불러오는 중...</p> : issues.length === 0 ? (
-              <div className="py-8 text-center"><AlertTriangle className="mx-auto h-8 w-8 text-muted-foreground" /><p className="mt-2 text-sm text-muted-foreground">이슈가 없습니다. "이슈 자동 생성"을 클릭하세요.</p></div>
+              <div className="py-8 text-center"><AlertTriangle className="mx-auto h-8 w-8 text-muted-foreground" /><p className="mt-2 text-sm text-muted-foreground">이슈가 없습니다. &ldquo;이슈 자동 생성&rdquo;을 클릭하세요.</p></div>
             ) : (
               <div className="grid grid-cols-3 gap-4">
                 {(["environment", "social", "governance"] as const).map((dim) => {
