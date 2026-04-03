@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getMaterialityIssues, saveMaterialityIssues } from "@/services/api";
-import { getMaterialityScoreRecommendation } from "@/lib/ai-recommendations";
+import { getMaterialityScoreRecommendation, getMaterialityScoreWithReason } from "@/lib/ai-recommendations";
 import { PageHeader } from "@/components/layout/page-header";
 import { MaterialitySubNav } from "@/components/materiality/materiality-sub-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import type { MaterialityIssue, MaterialityEsgDimension } from "@/types";
 const DIM_LABEL: Record<MaterialityEsgDimension, string> = { environment: "환경", social: "사회", governance: "거버넌스" };
 const DIM_ICON: Record<MaterialityEsgDimension, typeof Leaf> = { environment: Leaf, social: Users, governance: Scale };
 const DIM_COLOR: Record<MaterialityEsgDimension, string> = { environment: "text-green-600 bg-green-100", social: "text-blue-600 bg-blue-100", governance: "text-amber-700 bg-amber-100" };
+const THRESHOLD = 3.5;
 
 export default function MaterialityIssuesPage() {
   const router = useRouter();
@@ -116,6 +117,70 @@ export default function MaterialityIssuesPage() {
           </CardContent>
         </Card>
       </div>
+      {/* AI 추천 점수 근거 */}
+      {issues.length > 0 && (
+        <div className="mt-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" /> AI 추천 점수 근거
+                {industry && <span className="text-xs font-normal text-muted-foreground">— {industry} 산업 기준</span>}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">산업 특성과 글로벌 ESG 프레임워크 요구사항에 기반한 추천 점수입니다.</p>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border text-left text-muted-foreground">
+                      <th className="py-2 pr-2 font-medium">영역</th>
+                      <th className="py-2 pr-2 font-medium">이슈</th>
+                      <th className="py-2 pr-2 font-medium text-center">규모</th>
+                      <th className="py-2 pr-2 font-medium text-center">범위</th>
+                      <th className="py-2 pr-2 font-medium text-center">복구불가</th>
+                      <th className="py-2 pr-2 font-medium text-center">영향</th>
+                      <th className="py-2 pr-2 font-medium text-center">재무</th>
+                      <th className="py-2 font-medium">추천 근거</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {issues.map((issue) => {
+                      const rec = getMaterialityScoreWithReason(industry, issue.kpiGroup ?? issue.name);
+                      const impact = ((rec.scale + rec.scope + rec.irremediability) / 3);
+                      const isMaterial = impact >= THRESHOLD || rec.financial >= THRESHOLD;
+                      const color = DIM_COLOR[issue.dimension];
+                      return (
+                        <tr key={issue.id} className={isMaterial ? "bg-primary/[0.02]" : ""}>
+                          <td className="py-2 pr-2">
+                            <span className={cn("rounded px-1 py-0.5 text-[9px] font-bold", color)}>{DIM_LABEL[issue.dimension].charAt(0)}</span>
+                          </td>
+                          <td className="py-2 pr-2 font-medium whitespace-nowrap">{issue.name}</td>
+                          <td className="py-2 pr-2 text-center">{rec.scale}</td>
+                          <td className="py-2 pr-2 text-center">{rec.scope}</td>
+                          <td className="py-2 pr-2 text-center">{rec.irremediability}</td>
+                          <td className="py-2 pr-2 text-center">
+                            <span className={cn("font-bold", impact >= THRESHOLD ? "text-green-600" : "")}>{impact.toFixed(1)}</span>
+                          </td>
+                          <td className="py-2 pr-2 text-center">
+                            <span className={cn("font-bold", rec.financial >= THRESHOLD ? "text-blue-600" : "")}>{rec.financial}</span>
+                          </td>
+                          <td className="py-2 text-muted-foreground">
+                            {rec.reason}
+                            {rec.hasIndustryAdjustment && (
+                              <span className="ml-1 rounded bg-amber-100 px-1 py-0.5 text-[9px] font-bold text-amber-700">{industry} 가중</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <div className="mt-6 flex justify-end">
         <button onClick={() => router.push("/materiality/impact")}
           className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90">

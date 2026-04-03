@@ -509,6 +509,37 @@ const INDUSTRY_ADJUSTMENTS: Record<string, Record<string, Partial<MaterialitySco
 
 const clamp = (v: number) => Math.max(1, Math.min(5, Math.round(v * 2) / 2));
 
+/** 이슈별 추천 근거 설명 */
+const SCORE_REASONS: Record<string, string> = {
+  "탄소/기후": "GHG Protocol·TCFD 핵심 — 기후변화 대응은 모든 산업의 최우선 ESG 이슈이며, 탄소세·배출권 등 재무 영향이 큼",
+  "에너지": "GRI 302 필수 — 에너지 비용 상승 리스크와 RE100 등 재생에너지 전환 압력이 증가",
+  "수자원": "GRI 303·CDP Water — 수자원 부족 지역 확대에 따른 사업 지속성 리스크",
+  "폐기물": "GRI 306 — 순환경제 전환 요구 증가, 폐기물 처리 비용 상승",
+  "오염/환경 영향": "GRI 305·307 — 대기·수질 오염은 법규 위반 리스크와 지역사회 갈등 유발",
+  "환경 리스크/컴플라이언스": "GRI 307 — 환경 법규 강화 추세에 따른 벌금·제재 리스크 증가",
+  "제품/공급망": "EU 택소노미·LCA — 친환경 제품 수요 증가와 공급망 탄소발자국 관리 요구",
+  "기타": "GRI 304 — 생물다양성·녹색건물 등 보조적 환경 이슈",
+  "노동/안전": "GRI 403·중대재해처벌법 — 산업재해는 법적 리스크와 평판 리스크가 매우 높음",
+  "인사/고용": "GRI 401 — 인재 유치·유지는 기업 경쟁력의 핵심 요소",
+  "다양성/포용성(DEI)": "GRI 405·CSRD — 성별 다양성·임금 격차는 글로벌 ESG 평가의 핵심 항목",
+  "노동/인권": "GRI 408·409·EU CSDDD — 인권 실사 의무화 추세, 공급망 포함 인권 리스크 관리 필수",
+  "공급망/협력사": "EcoVadis·CSRD — 공급망 ESG 리스크가 기업 평판·법적 책임에 직접 영향",
+  "교육/조직문화": "GRI 404 — 인적자본 투자는 장기 기업 가치에 기여하나 단기 재무 영향은 제한적",
+  "고객/사회 영향": "GRI 413·SASB — 고객 만족도·지역사회 기여는 사회적 허가 유지에 중요",
+  "이사회/지배구조": "GRI 102·K-ESG — 이사회 독립성·다양성은 지배구조 건전성의 기본 지표",
+  "윤리/반부패": "GRI 205·UNGC — 반부패는 글로벌 규제 강화 분야이며 위반 시 재무 영향이 매우 큼",
+  "정보보안/데이터 보호": "GDPR·개인정보보호법 — 보안 사고 시 벌금·고객 이탈 등 즉각적 재무 영향",
+  "리스크 관리/내부통제": "TCFD·CSRD — 전사 리스크 관리 체계는 기업 지속가능성의 기반",
+  "공시/투명성": "GRI·CSRD — ESG 공시 의무화 확대에 따른 투명성 요구 증가",
+  "공급망 거버넌스": "EU CSDDD — 공급망 실사법 대응을 위한 거버넌스 체계 구축 필수",
+  "정책/시스템": "K-ESG — ESG 전담 조직·정책은 ESG 경영의 제도적 기반",
+};
+
+export interface MaterialityScoreWithReason extends MaterialityScoreRecommendation {
+  reason: string;
+  hasIndustryAdjustment: boolean;
+}
+
 /** 산업군 기반 중대성 이슈 AI 추천 점수 반환 */
 export function getMaterialityScoreRecommendation(
   industry: string,
@@ -523,4 +554,15 @@ export function getMaterialityScoreRecommendation(
     irremediability: clamp(base.irremediability + (adj.irremediability ?? 0)),
     financial: clamp(base.financial + (adj.financial ?? 0)),
   };
+}
+
+/** 산업군 기반 중대성 이슈 AI 추천 점수 + 근거 반환 */
+export function getMaterialityScoreWithReason(
+  industry: string,
+  kpiGroup: string,
+): MaterialityScoreWithReason {
+  const score = getMaterialityScoreRecommendation(industry, kpiGroup);
+  const hasAdj = !!INDUSTRY_ADJUSTMENTS[industry]?.[kpiGroup];
+  const reason = SCORE_REASONS[kpiGroup] ?? "ESG 관리 기본 항목";
+  return { ...score, reason, hasIndustryAdjustment: hasAdj };
 }
